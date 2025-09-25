@@ -3,7 +3,7 @@
 import asyncio
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Self, Tuple, Type
+from typing import Self, Tuple, Type, TYPE_CHECKING
 
 from docutranslate.cacher import md_based_convert_cacher
 from docutranslate.exporter.base import ExporterConfig
@@ -15,11 +15,14 @@ from docutranslate.ir.markdown_document import MarkdownDocument
 if DOCLING_EXIST:
     from docutranslate.converter.x2md.converter_docling import ConverterDoclingConfig, ConverterDocling
 from docutranslate.converter.converter_identity import ConverterIdentity
-from docutranslate.converter.x2md.converter_mineru import ConverterMineruConfig, ConverterMineru
+"""
+Note: avoid importing heavy/optional converters at module import time.
+They are imported lazily inside _get_converter_factory to prevent hard deps
+when a different engine is used (e.g., mineru_local without httpx).
+"""
 from docutranslate.converter.x2md.base import X2MarkdownConverterConfig, X2MarkdownConverter
-from docutranslate.exporter.md.md2html_exporter import MD2HTMLExporterConfig, MD2HTMLExporter
-from docutranslate.exporter.md.md2md_exporter import MD2MDExporter
-from docutranslate.exporter.md.md2mdzip_exporter import MD2MDZipExporter
+if TYPE_CHECKING:
+    from docutranslate.exporter.md.md2html_exporter import MD2HTMLExporterConfig
 from docutranslate.exporter.md.types import ConvertEngineType
 from docutranslate.workflow.base import Workflow, WorkflowConfig
 from docutranslate.workflow.interfaces import MDFormatsExportable, HTMLExportable
@@ -31,19 +34,33 @@ class MarkdownBasedWorkflowConfig(WorkflowConfig):
     convert_engine: ConvertEngineType
     converter_config: X2MarkdownConverterConfig | None
     translator_config: MDTranslatorConfig
-    html_exporter_config: MD2HTMLExporterConfig
+    html_exporter_config: 'MD2HTMLExporterConfig'
 
 
 class MarkdownBasedWorkflow(Workflow[MarkdownBasedWorkflowConfig, Document, MarkdownDocument],
-                            HTMLExportable[MD2HTMLExporterConfig],
+                            HTMLExportable,
                             MDFormatsExportable[ExporterConfig]):
-    _converter_factory: dict[
-        ConvertEngineType, Tuple[Type[X2MarkdownConverter|ConverterIdentity], Type[X2MarkdownConverterConfig]] | None] = {
-        "mineru": (ConverterMineru, ConverterMineruConfig),
-        "identity": (ConverterIdentity, None)
-    }
-    if DOCLING_EXIST:
-        _converter_factory["docling"] = (ConverterDocling, ConverterDoclingConfig)
+    def _get_converter_factory(self, engine: ConvertEngineType):
+        if engine == "identity":
+            return ConverterIdentity, None
+        if engine == "mineru":
+            from docutranslate.converter.x2md.converter_mineru import (
+                ConverterMineru, ConverterMineruConfig,
+            )
+            return ConverterMineru, ConverterMineruConfig
+        if engine == "mineru_local":
+            from docutranslate.converter.x2md.converter_mineru_local import (
+                ConverterMineruLocal, ConverterMineruLocalConfig,
+            )
+            return ConverterMineruLocal, ConverterMineruLocalConfig
+        if engine == "docling":
+            if DOCLING_EXIST:
+                from docutranslate.converter.x2md.converter_docling import (
+                    ConverterDocling, ConverterDoclingConfig,
+                )
+                return ConverterDocling, ConverterDoclingConfig
+            raise ValueError("docling is not installed")
+        raise ValueError(f"不存在{engine}解析引擎")
 
     def __init__(self, config: MarkdownBasedWorkflowConfig):
         super().__init__(config=config)
@@ -66,14 +83,11 @@ class MarkdownBasedWorkflow(Workflow[MarkdownBasedWorkflowConfig, Document, Mark
             return document_cached
 
         # 未缓存则解析文件
-        if convert_engin in self._converter_factory:
-            converter_class, config_class = self._converter_factory[convert_engin]
-            if config_class and not isinstance(convert_config, config_class):
-                raise TypeError(
-                    f"The correct convert_config was not passed. It should be of type {config_class.__name__}, but it is currently of type {type(convert_config).__name__}.")
-            converter = converter_class(convert_config)
-        else:
-            raise ValueError(f"不存在{convert_engin}解析引擎")
+        converter_class, config_class = self._get_converter_factory(convert_engin)
+        if config_class and not isinstance(convert_config, config_class):
+            raise TypeError(
+                f"The correct convert_config was not passed. It should be of type {config_class.__name__}, but it is currently of type {type(convert_config).__name__}.")
+        converter = converter_class(convert_config)
         document_md = converter.convert(self.document_original)
         if hasattr(converter,"attachments"):
             for attachment in converter.attachments:
@@ -108,21 +122,24 @@ class MarkdownBasedWorkflow(Workflow[MarkdownBasedWorkflowConfig, Document, Mark
         self.document_translated = document_md
         return self
 
-    def export_to_html(self, config: MD2HTMLExporterConfig | None = None) -> str:
+    def export_to_html(self, config=None) -> str:
+        from docutranslate.exporter.md.md2html_exporter import MD2HTMLExporter
         config = config or self.config.html_exporter_config
         docu = self._export(MD2HTMLExporter(config))
         return docu.content.decode()
 
     def export_to_markdown(self, config: ExporterConfig | None = None) -> str:
+        from docutranslate.exporter.md.md2md_exporter import MD2MDExporter
         docu = self._export(MD2MDExporter())
         return docu.content.decode()
 
     def export_to_markdown_zip(self, config: ExporterConfig | None = None) -> bytes:
+        from docutranslate.exporter.md.md2mdzip_exporter import MD2MDZipExporter
         docu = self._export(MD2MDZipExporter())
         return docu.content
 
     def save_as_html(self, name: str = None, output_dir: Path | str = "./output",
-                     config: MD2HTMLExporterConfig | None = None) -> Self:
+                     config=None) -> Self:
         config = config or self.config.html_exporter_config
         self._save(exporter=MD2HTMLExporter(config=config), name=name, output_dir=output_dir)
         return self

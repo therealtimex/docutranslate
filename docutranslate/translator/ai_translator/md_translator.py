@@ -3,9 +3,6 @@
 import asyncio
 from dataclasses import dataclass
 from typing import Self
-
-from docutranslate.agents import MDTranslateAgent
-from docutranslate.agents.markdown_agent import MDTranslateAgentConfig
 from docutranslate.context.md_mask_context import MDMaskUrisContext
 from docutranslate.ir.markdown_document import MarkdownDocument
 from docutranslate.translator.ai_translator.base import AiTranslatorConfig, AiTranslator
@@ -23,6 +20,8 @@ class MDTranslator(AiTranslator):
         self.chunk_size = config.chunk_size
         self.translate_agent = None
         if not self.skip_translate:
+            from docutranslate.agents.markdown_agent import MDTranslateAgentConfig
+            from docutranslate.agents import MDTranslateAgent
             agent_config = MDTranslateAgentConfig(custom_prompt=config.custom_prompt,
                                                   to_lang=config.to_lang,
                                                   base_url=config.base_url,

@@ -208,13 +208,7 @@ Key flags
 
 - `--skip-translate`: parse and export without calling an LLM
 - `--insert-mode [replace|append|prepend]` and `--separator`: for txt/xlsx/docx/srt/epub/html
-- `--convert-engine [docling|mineru_local|mineru|identity]`: for markdown-based workflow (PDF/MD/images)
-  - Default: `docling` when installed; otherwise `mineru`
-- `--convert-engine mineru_local`: use a locally installed MinerU (no token). Pair with:
-  - `--mineru-local-mode [cli_dir|cli_zip]` (default: cli_dir)
-  - `--mineru-local-cmd` (default: mineru)
-  - `--mineru-local-args` (default: `--input {input} --output {output}`)
-  - `--mineru-local-md-file` (default: full.md)
+- `--convert-engine [mineru|docling|identity]`: for markdown-based workflow (PDF/MD/images)
 - `--glossary-enable` plus `--glossary-*-*` options to enable a glossary generation agent
 
 ## Usage
