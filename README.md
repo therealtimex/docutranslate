@@ -163,8 +163,10 @@ Build and try the CLI from a clean, isolated environment using uv.
 # 1) Create an isolated env (optional if you already have one)
 uv venv .venv && source .venv/bin/activate
 
-# 2) Install dependencies for development (optional)
-uv sync --group dev
+# 2) Choose your dependency group
+#    - dev-light: base deps only (no torch/docling)
+#    - dev:       full extras for parsing (includes heavy deps)
+uv sync --group dev-light
 
 # 3) Build wheel and sdist
 uv build
@@ -190,6 +192,10 @@ For real translations, set your LLM settings via env vars or flags, e.g.:
 ```bash
 export OPENAI_BASE_URL=... OPENAI_API_KEY=... OPENAI_MODEL=...
 docutranslate translate ./paper.docx --to-lang 中文 --formats markdown html --out-dir output
+
+Notes
+- dev-light installs only the core runtime; PDF parsing via docling and related ML stacks are not included.
+- For PDFs on dev-light, use `--convert-engine mineru` (requires `MINERU_TOKEN`) or `mineru_local` if you have MinerU installed locally.
 ```
 
 Basic examples
