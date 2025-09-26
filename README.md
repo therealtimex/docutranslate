@@ -155,6 +155,43 @@ DocuTranslate now ships with a first-class CLI. It auto-detects workflow type fr
 
 - Env fallbacks: `OPENAI_BASE_URL`, `OPENAI_API_KEY`, `OPENAI_MODEL`, `MINERU_TOKEN`.
 
+### Using uv (recommended for local testing)
+
+Build and try the CLI from a clean, isolated environment using uv.
+
+```bash
+# 1) Create an isolated env (optional if you already have one)
+uv venv .venv && source .venv/bin/activate
+
+# 2) Install dependencies for development (optional)
+uv sync --group dev
+
+# 3) Build wheel and sdist
+uv build
+
+# 4) Install the freshly built wheel
+uv pip install dist/docutranslate-*.whl
+
+# 5) Sanity-check the CLI
+docutranslate -h
+docutranslate version
+
+# 6) Quick smoke test without calling an LLM
+docutranslate translate examples/2206.01062v1.md \
+  --skip-translate --formats markdown --out-dir output
+
+# Alternative: run directly from source without installing
+uv run -m docutranslate.cli translate examples/2206.01062v1.md \
+  --skip-translate --formats markdown --out-dir output
+```
+
+For real translations, set your LLM settings via env vars or flags, e.g.:
+
+```bash
+export OPENAI_BASE_URL=... OPENAI_API_KEY=... OPENAI_MODEL=...
+docutranslate translate ./paper.docx --to-lang 中文 --formats markdown html --out-dir output
+```
+
 Basic examples
 
 ```bash
