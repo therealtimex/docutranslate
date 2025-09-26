@@ -320,6 +320,7 @@ wheels = [
 
 [[package]]
 name = "docutranslate"
+version = "1.4.6"
 source = { editable = "." }
 dependencies = [
     { name = "beautifulsoup4" },
