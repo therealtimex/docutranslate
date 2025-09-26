@@ -79,7 +79,7 @@ class MarkdownBasedWorkflow(Workflow[MarkdownBasedWorkflowConfig, Document, Mark
         document_cached = md_based_convert_cacher.get_cached_result(self.document_original, convert_engin,
                                                                     convert_config)
         if document_cached:
-            self.attachment.add_document("md_cached",document_cached)
+            self.attachment.add_document("md_cached",document_cached.copy())
             return document_cached
 
         # 未缓存则解析文件
@@ -92,8 +92,8 @@ class MarkdownBasedWorkflow(Workflow[MarkdownBasedWorkflowConfig, Document, Mark
         if hasattr(converter,"attachments"):
             for attachment in converter.attachments:
                 self.attachment.add_attachment(attachment)
-        # 获取缓存解析后文件
-        md_based_convert_cacher.cache_result(document_md, self.document_original, convert_engin, convert_config)
+        # 缓存解析后文件
+        md_based_convert_cacher.cache_result(document_md.copy(), self.document_original, convert_engin, convert_config)
 
         return document_md
 

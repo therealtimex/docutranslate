@@ -5,6 +5,7 @@ readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
     "httpx==0.27.2",
+    "fastapi[standard]>=0.115.12",
     "jsonpath-ng>=1.7.0",
     "openpyxl>=3.1.5",
     "xlsx2html>=0.6.2",
@@ -14,32 +15,23 @@ dependencies = [
     "lxml>=5.4.0",
     "python-docx>=1.2.0",
     "beautifulsoup4>=4.13.4",
-    "jinja2>=3.1.4",
     "markdown>=3.8.2",
     "pymdown-extensions>=10.16.1",
     "chardet>=5.2.0",
+    "pysubs2>=1.8.0",
 ]
 dynamic = ["version"]
 
 [project.optional-dependencies]
-docling = [
-    "opencv-python>=4.11.0.86",
-    "docling>=2.40.0",
-]
-webui = [
-    "fastapi[standard]>=0.115.12",
-]
+docling = ["opencv-python>=4.11.0.86", "docling>=2.40.0", "hf-xet>=1.1.10"]
 
 [dependency-groups]
-dev = [
-    "opencv-python>=4.11.0.86",
-    "docling>=2.40.0",
-]
+dev = ["opencv-python>=4.11.0.86", "docling>=2.40.0", "hf-xet>=1.1.10"]
 [project.scripts]
 docutranslate = "docutranslate.cli:main"
 
 [build-system]
-requires = ["setuptools>=80.9.0"] # 或者你需要的 setuptools 版本
+requires = ["setuptools>=80.9.0"]       # 或者你需要的 setuptools 版本
 build-backend = "setuptools.build_meta"
 backend-path = ["."]
 [tool.setuptools]

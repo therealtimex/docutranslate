@@ -13,7 +13,6 @@ from urllib.parse import urlparse
 
 import httpx
 
-from docutranslate.global_values import USE_PROXY
 from docutranslate.logger import global_logger
 from docutranslate.utils.utils import get_httpx_proxies
 
@@ -48,6 +47,7 @@ class AgentConfig:
     timeout: int = 1200  # 单位(秒)，这个值是httpx.TimeOut中read的值,并非总的超时时间
     thinking: ThinkingMode = "disable"
     retry: int = 2
+    system_proxy_enable: bool = False
 
 
 class TotalErrorCounter:
@@ -107,39 +107,41 @@ def extract_token_info(response_data: dict) -> tuple[int, int, int, int]:
     # 初始化token详细统计
     cached_tokens = 0
     reasoning_tokens = 0
+    try:
+        # 尝试从不同格式获取cached_tokens
+        # 格式1: input_tokens_details.cached_tokens
+        if (
+            "input_tokens_details" in usage
+            and "cached_tokens" in usage["input_tokens_details"]
+        ):
+            cached_tokens = usage["input_tokens_details"]["cached_tokens"]
+        # 格式2: prompt_tokens_details.cached_tokens
+        elif (
+            "prompt_tokens_details" in usage
+            and "cached_tokens" in usage["prompt_tokens_details"]
+        ):
+            cached_tokens = usage["prompt_tokens_details"]["cached_tokens"]
+        # 格式3: prompt_cache_hit_tokens (直接在usage下)
+        elif "prompt_cache_hit_tokens" in usage:
+            cached_tokens = usage["prompt_cache_hit_tokens"]
 
-    # 尝试从不同格式获取cached_tokens
-    # 格式1: input_tokens_details.cached_tokens
-    if (
-        "input_tokens_details" in usage
-        and "cached_tokens" in usage["input_tokens_details"]
-    ):
-        cached_tokens = usage["input_tokens_details"]["cached_tokens"]
-    # 格式2: prompt_tokens_details.cached_tokens
-    elif (
-        "prompt_tokens_details" in usage
-        and "cached_tokens" in usage["prompt_tokens_details"]
-    ):
-        cached_tokens = usage["prompt_tokens_details"]["cached_tokens"]
-    # 格式3: prompt_cache_hit_tokens (直接在usage下)
-    elif "prompt_cache_hit_tokens" in usage:
-        cached_tokens = usage["prompt_cache_hit_tokens"]
-
-    # 尝试从不同格式获取reasoning_tokens
-    # 格式1: output_tokens_details.reasoning_tokens
-    if (
-        "output_tokens_details" in usage
-        and "reasoning_tokens" in usage["output_tokens_details"]
-    ):
-        reasoning_tokens = usage["output_tokens_details"]["reasoning_tokens"]
-    # 格式2: completion_tokens_details.reasoning_tokens
-    elif (
-        "completion_tokens_details" in usage
-        and "reasoning_tokens" in usage["completion_tokens_details"]
-    ):
-        reasoning_tokens = usage["completion_tokens_details"]["reasoning_tokens"]
-
-    return input_tokens, cached_tokens, output_tokens, reasoning_tokens
+        # 尝试从不同格式获取reasoning_tokens
+        # 格式1: output_tokens_details.reasoning_tokens
+        if (
+            "output_tokens_details" in usage
+            and "reasoning_tokens" in usage["output_tokens_details"]
+        ):
+            reasoning_tokens = usage["output_tokens_details"]["reasoning_tokens"]
+        # 格式2: completion_tokens_details.reasoning_tokens
+        elif (
+            "completion_tokens_details" in usage
+            and "reasoning_tokens" in usage["completion_tokens_details"]
+        ):
+            reasoning_tokens = usage["completion_tokens_details"]["reasoning_tokens"]
+        return input_tokens, cached_tokens, output_tokens, reasoning_tokens
+    except TypeError as e:
+        print(f"获取token发生错误:{e.__repr__()}")
+        return -1, -1, -1, -1
 
 
 class TokenCounter:
@@ -245,6 +247,8 @@ class Agent:
         self.token_counter = TokenCounter(logger=self.logger)
 
         self.retry = config.retry
+
+        self.system_proxy_enable = config.system_proxy_enable
 
     def _add_thinking_mode(self, data: dict):
         if self.domain not in self._think_factory:
@@ -441,7 +445,7 @@ class Agent:
         )
         total = len(prompts)
         self.logger.info(
-            f"base-url:{self.baseurl},model-id:{self.model_id},concurrent:{max_concurrent},temperature:{self.temperature}"
+            f"base-url:{self.baseurl},model-id:{self.model_id},concurrent:{max_concurrent},temperature:{self.temperature},system_proxy:{self.system_proxy_enable}"
         )
         self.logger.info(f"预计发送{total}个请求，并发请求数:{max_concurrent}")
         self.total_error_counter.max_errors_count = (
@@ -457,7 +461,7 @@ class Agent:
         semaphore = asyncio.Semaphore(max_concurrent)
         tasks = []
 
-        proxies = get_httpx_proxies() if USE_PROXY else None
+        proxies = get_httpx_proxies() if self.system_proxy_enable else None
 
         limits = httpx.Limits(
             max_connections=self.max_concurrent * 2,  # 为重试和并发预留空间
@@ -496,11 +500,14 @@ class Agent:
 
             # 新增：打印token使用统计
             token_stats = self.token_counter.get_stats()
-            self.logger.info(
-                f"Token使用统计 - 输入: {token_stats['input_tokens'] / 1000:.2f}K(含cached: {token_stats['cached_tokens'] / 1000:.2f}K), "
-                f"输出: {token_stats['output_tokens'] / 1000:.2f}K(含reasoning: {token_stats['reasoning_tokens'] / 1000:.2f}K), "
-                f"总计: {token_stats['total_tokens'] / 1000:.2f}K"
-            )
+            if token_stats["input_tokens"] < 0:
+                self.logger.info("Token统计失败")
+            else:
+                self.logger.info(
+                    f"Token使用统计 - 输入: {token_stats['input_tokens'] / 1000:.2f}K(含cached: {token_stats['cached_tokens'] / 1000:.2f}K), "
+                    f"输出: {token_stats['output_tokens'] / 1000:.2f}K(含reasoning: {token_stats['reasoning_tokens'] / 1000:.2f}K), "
+                    f"总计: {token_stats['total_tokens'] / 1000:.2f}K"
+                )
 
             return results
 
@@ -680,7 +687,7 @@ class Agent:
         error_result_handler: ErrorResultHandlerType = None,
     ) -> list[Any]:
         self.logger.info(
-            f"base-url:{self.baseurl},model-id:{self.model_id},concurrent:{self.max_concurrent},temperature:{self.temperature}"
+            f"base-url:{self.baseurl},model-id:{self.model_id},concurrent:{self.max_concurrent},temperature:{self.temperature},system_proxy:{self.system_proxy_enable}"
         )
         self.logger.info(
             f"预计发送{len(prompts)}个请求，并发请求数:{self.max_concurrent}"
@@ -705,7 +712,7 @@ class Agent:
             max_connections=self.max_concurrent * 2,  # 允许连接复用
             max_keepalive_connections=self.max_concurrent,  # 保持活跃连接
         )
-        proxies = get_httpx_proxies() if USE_PROXY else None
+        proxies = get_httpx_proxies() if self.system_proxy_enable else None
         with httpx.Client(
             trust_env=False, proxies=proxies, verify=False, limits=limits
         ) as client:
@@ -730,11 +737,14 @@ class Agent:
 
         # 新增：打印token使用统计
         token_stats = self.token_counter.get_stats()
-        self.logger.info(
-            f"Token使用统计 - 输入: {token_stats['input_tokens'] / 1000:.2f}K(含cached: {token_stats['cached_tokens'] / 1000:.2f}K), "
-            f"输出: {token_stats['output_tokens'] / 1000:.2f}K(含reasoning: {token_stats['reasoning_tokens'] / 1000:.2f}K), "
-            f"总计: {token_stats['total_tokens'] / 1000:.2f}K"
-        )
+        if token_stats["input_tokens"] < 0:
+            self.logger.info("Token统计失败")
+        else:
+            self.logger.info(
+                f"Token使用统计 - 输入: {token_stats['input_tokens'] / 1000:.2f}K(含cached: {token_stats['cached_tokens'] / 1000:.2f}K), "
+                f"输出: {token_stats['output_tokens'] / 1000:.2f}K(含reasoning: {token_stats['reasoning_tokens'] / 1000:.2f}K), "
+                f"总计: {token_stats['total_tokens'] / 1000:.2f}K"
+            )
 
         return output_list
 
