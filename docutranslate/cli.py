@@ -481,6 +481,9 @@ def main():
             missing = str(e).split("'")[-2] if "'" in str(e) else str(e)
             print(t("missing_optional_dependency", lang=args.lang, missing=missing))
             raise SystemExit(EC_DEP_MISSING)
+        except Exception as e:
+            print(t("missing_optional_dependency", lang=args.lang, missing=str(e)))
+            raise SystemExit(EC_DEP_MISSING)
         run_app(port=args.port)
         return
 
@@ -490,6 +493,9 @@ def main():
         except ModuleNotFoundError as e:
             missing = str(e).split("'")[-2] if "'" in str(e) else str(e)
             print(t("missing_optional_dependency", lang=args.lang, missing=missing))
+            raise SystemExit(EC_DEP_MISSING)
+        except Exception as e:
+            print(t("missing_optional_dependency", lang=args.lang, missing=str(e)))
             raise SystemExit(EC_DEP_MISSING)
         run_app(port=args.port)
         return

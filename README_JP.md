@@ -5,11 +5,11 @@
 <h1 align="center">DocuTranslate</h1>
 
 <p align="center">
-  <a href="https://github.com/xunbu/docutranslate/stargazers"><img src="https://img.shields.io/github/stars/xunbu/docutranslate?style=flat-square&logo=github&color=blue" alt="GitHub stars"></a>
-  <a href="https://github.com/xunbu/docutranslate/releases"><img src="https://img.shields.io/github/downloads/xunbu/docutranslate/total?logo=github&style=flat-square" alt="GitHub Downloads"></a>
+  <a href="https://github.com/therealtimex/docutranslate/stargazers"><img src="https://img.shields.io/github/stars/therealtimex/docutranslate?style=flat-square&logo=github&color=blue" alt="GitHub stars"></a>
+  <a href="https://github.com/therealtimex/docutranslate/releases"><img src="https://img.shields.io/github/downloads/therealtimex/docutranslate/total?logo=github&style=flat-square" alt="GitHub Downloads"></a>
   <a href="https://pypi.org/project/docutranslate/"><img src="https://img.shields.io/pypi/v/docutranslate?style=flat-square" alt="PyPI version"></a>
   <a href="https://www.python.org/"><img src="https://img.shields.io/badge/Python-3.11+-3776AB?logo=python&logoColor=white&style=flat-square" alt="Python Version"></a>
-  <a href="./LICENSE"><img src="https://img.shields.io/github/license/xunbu/docutranslate?style=flat-square" alt="License"></a>
+  <a href="./LICENSE"><img src="https://img.shields.io/github/license/therealtimex/docutranslate?style=flat-square" alt="License"></a>
 </p>
 
 <p align="center">
@@ -46,7 +46,7 @@
 
 ## 統合パッケージ
 
-すぐに始めたいユーザーのために、[GitHub Releases](https://github.com/xunbu/docutranslate/releases)で統合パッケージを提供しています。ダウンロードして解凍し、AIプラットフォームのAPIキーを入力するだけで使用を開始できます。
+すぐに始めたいユーザーのために、[GitHub Releases](https://github.com/therealtimex/docutranslate/releases)で統合パッケージを提供しています。ダウンロードして解凍し、AIプラットフォームのAPIキーを入力するだけで使用を開始できます。
 
 - **DocuTranslate**: 標準版。オンラインの`minerU`エンジンを使用してPDFドキュメントを解析します。ローカルでのPDF解析が不要な場合はこのバージョンを選択してください（推奨）。
 - **DocuTranslate_full**: 完全版。`docling`ローカルPDF解析エンジンを内蔵しています。ローカルでのPDF解析が必要な場合はこのバージョンを選択してください。
@@ -80,7 +80,7 @@ uv add docutranslate[docling]
 
 ```bash
 # 環境の初期化
-git clone https://github.com/xunbu/docutranslate.git
+git clone https://github.com/therealtimex/docutranslate.git
 
 cd docutranslate
 
@@ -443,7 +443,7 @@ if __name__ == "__main__":
 
 ドキュメント解析エンジンとして`docling`を選択した場合（`convert_engine="docling"`）、初回使用時にHugging Faceから必要なモデルがダウンロードされます。
 
-> より良い選択肢は、[GitHub Releases](https://github.com/xunbu/docutranslate/releases)から`docling_artifact.zip`をダウンロードし、作業ディレクトリに解凍することです。
+> より良い選択肢は、[GitHub Releases](https://github.com/therealtimex/docutranslate/releases)から`docling_artifact.zip`をダウンロードし、作業ディレクトリに解凍することです。
 
 **`docling`モデルのダウンロード時のネットワーク問題解決策:**
 
@@ -459,7 +459,7 @@ import os
 os.environ['HF_ENDPOINT'] = 'https://hf-mirror.com'
 ```
 2.  **オフラインでの使用（モデルパッケージを事前にダウンロード）**:
-    *   [GitHub Releases](https://github.com/xunbu/docutranslate/releases)から`docling_artifact.zip`をダウンロードします。
+    *   [GitHub Releases](https://github.com/therealtimex/docutranslate/releases)から`docling_artifact.zip`をダウンロードします。
     *   プロジェクトディレクトリに解凍します。
 *   設定でモデルのパスを指定します（モデルがスクリプトと同じディレクトリにない場合）：
 ```python
@@ -499,11 +499,11 @@ A: デフォルトではシステムプロキシを使用しません。`Transla
 
 ## Star History
 
-<a href="https://www.star-history.com/#xunbu/docutranslate&Date">
+<a href="https://www.star-history.com/#therealtimex/docutranslate&Date">
  <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=xunbu/docutranslate&type=Date&theme=dark" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=xunbu/docutranslate&type=Date" />
-   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=xunbu/docutranslate&type=Date" />
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=therealtimex/docutranslate&type=Date&theme=dark" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=therealtimex/docutranslate&type=Date" />
+   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=therealtimex/docutranslate&type=Date" />
  </picture>
 </a>
 

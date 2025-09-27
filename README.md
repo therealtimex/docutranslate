@@ -5,11 +5,11 @@
 <h1 align="center">DocuTranslate</h1>
 
 <p align="center">
-  <a href="https://github.com/xunbu/docutranslate/stargazers"><img src="https://img.shields.io/github/stars/xunbu/docutranslate?style=flat-square&logo=github&color=blue" alt="GitHub stars"></a>
-  <a href="https://github.com/xunbu/docutranslate/releases"><img src="https://img.shields.io/github/downloads/xunbu/docutranslate/total?logo=github&style=flat-square" alt="GitHub Downloads"></a>
+  <a href="https://github.com/therealtimex/docutranslate/stargazers"><img src="https://img.shields.io/github/stars/therealtimex/docutranslate?style=flat-square&logo=github&color=blue" alt="GitHub stars"></a>
+  <a href="https://github.com/therealtimex/docutranslate/releases"><img src="https://img.shields.io/github/downloads/therealtimex/docutranslate/total?logo=github&style=flat-square" alt="GitHub Downloads"></a>
   <a href="https://pypi.org/project/docutranslate/"><img src="https://img.shields.io/pypi/v/docutranslate?style=flat-square" alt="PyPI version"></a>
   <a href="https://www.python.org/"><img src="https://img.shields.io/badge/Python-3.11+-3776AB?logo=python&logoColor=white&style=flat-square" alt="Python Version"></a>
-  <a href="./LICENSE"><img src="https://img.shields.io/github/license/xunbu/docutranslate?style=flat-square" alt="License"></a>
+  <a href="./LICENSE"><img src="https://img.shields.io/github/license/therealtimex/docutranslate?style=flat-square" alt="License"></a>
 </p>
 
 <p align="center">
@@ -46,7 +46,7 @@
 
 ## All-in-One Packages
 
-For users who want to get started quickly, we provide all-in-one packages on [GitHub Releases](https://github.com/xunbu/docutranslate/releases). Simply download, unzip, and enter your AI platform API Key to begin.
+For users who want to get started quickly, we provide all-in-one packages on [GitHub Releases](https://github.com/therealtimex/docutranslate/releases). Simply download, unzip, and enter your AI platform API Key to begin.
 
 - **DocuTranslate**: Standard version, uses the online `minerU` engine to parse PDF documents. Choose this version if you don't need local PDF parsing (recommended).
 - **DocuTranslate_full**: Full version, includes the built-in `docling` local PDF parsing engine. Choose this version if you need local PDF parsing.
@@ -88,7 +88,7 @@ uv add "docutranslate[docling]"
 
 ```bash
 # Initialize environment
-git clone https://github.com/xunbu/docutranslate.git
+git clone https://github.com/therealtimex/docutranslate.git
 
 cd docutranslate
 
@@ -204,7 +204,7 @@ The CLI and Web UI are English-first and support a Chinese locale.
 
 - Default: English. Override with the top-level CLI flag `--lang en|zh` or the env var `DOCUTRANSLATE_LANG`.
 - Web UI also respects `DOCUTRANSLATE_LANG` for the initial page language.
-- A language switcher (EN/中文) appears at the top-right of the Web UI and persists your choice in `localStorage`.
+- A language switcher is available in the Web UI and persists your choice in `localStorage`.
 - Example: `docutranslate --lang zh translate input.md --skip-translate --formats markdown --out-dir output`.
 
 ## Providers (Multi-Provider Setup)
@@ -577,7 +577,7 @@ If you choose `mineru` as your document parsing engine (`convert_engine="mineru"
 
 If you choose `docling` as your document parsing engine (`convert_engine="docling"`), it will download the required models from Hugging Face upon first use.
 
-> A better option is to download `docling_artifact.zip` from [GitHub Releases](https://github.com/xunbu/docutranslate/releases) and extract it to your working directory.
+> A better option is to download `docling_artifact.zip` from [GitHub Releases](https://github.com/therealtimex/docutranslate/releases) and extract it to your working directory.
 
 **Solutions for network issues when downloading `docling` models:**
 
@@ -593,7 +593,7 @@ import os
 os.environ['HF_ENDPOINT'] = 'https://hf-mirror.com'
 ```
 2.  **Offline Usage (Download the model package in advance)**:
-    *   Download `docling_artifact.zip` from [GitHub Releases](https://github.com/xunbu/docutranslate/releases).
+    *   Download `docling_artifact.zip` from [GitHub Releases](https://github.com/therealtimex/docutranslate/releases).
     *   Extract it into your project directory.
 *   Specify the model path in your configuration (if the model is not in the same directory as the script):
 ```python
@@ -633,11 +633,11 @@ A: By default, the software does not use the system proxy. You can enable it by 
 
 ## Star History
 
-<a href="https://www.star-history.com/#xunbu/docutranslate&Date">
+<a href="https://www.star-history.com/#therealtimex/docutranslate&Date">
  <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=xunbu/docutranslate&type=Date&theme=dark" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=xunbu/docutranslate&type=Date" />
-   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=xunbu/docutranslate&type=Date" />
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=therealtimex/docutranslate&type=Date&theme=dark" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=therealtimex/docutranslate&type=Date" />
+   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=therealtimex/docutranslate&type=Date" />
  </picture>
 </a>
 

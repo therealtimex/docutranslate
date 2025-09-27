@@ -5,11 +5,11 @@
 <h1 align="center">DocuTranslate</h1>
 
 <p align="center">
-  <a href="https://github.com/xunbu/docutranslate/stargazers"><img src="https://img.shields.io/github/stars/xunbu/docutranslate?style=flat-square&logo=github&color=blue" alt="GitHub stars"></a>
-  <a href="https://github.com/xunbu/docutranslate/releases"><img src="https://img.shields.io/github/downloads/xunbu/docutranslate/total?logo=github&style=flat-square" alt="GitHub Downloads"></a>
+  <a href="https://github.com/therealtimex/docutranslate/stargazers"><img src="https://img.shields.io/github/stars/therealtimex/docutranslate?style=flat-square&logo=github&color=blue" alt="GitHub stars"></a>
+  <a href="https://github.com/therealtimex/docutranslate/releases"><img src="https://img.shields.io/github/downloads/therealtimex/docutranslate/total?logo=github&style=flat-square" alt="GitHub Downloads"></a>
   <a href="https://pypi.org/project/docutranslate/"><img src="https://img.shields.io/pypi/v/docutranslate?style=flat-square" alt="PyPI version"></a>
   <a href="https://www.python.org/"><img src="https://img.shields.io/badge/Python-3.11+-3776AB?logo=python&logoColor=white&style=flat-square" alt="Python Version"></a>
-  <a href="./LICENSE"><img src="https://img.shields.io/github/license/xunbu/docutranslate?style=flat-square" alt="License"></a>
+  <a href="./LICENSE"><img src="https://img.shields.io/github/license/therealtimex/docutranslate?style=flat-square" alt="License"></a>
 </p>
 
 <p align="center">
@@ -46,7 +46,7 @@
 
 ## 整合包
 
-对于希望快速上手的用户，我们在 [GitHub Releases](https://github.com/xunbu/docutranslate/releases) 上提供整合包。您只需下载、解压，并填入您的
+对于希望快速上手的用户，我们在 [GitHub Releases](https://github.com/therealtimex/docutranslate/releases) 上提供整合包。您只需下载、解压，并填入您的
 AI 平台 API-Key 即可开始使用。
 
 - **DocuTranslate**: 标准版，使用在线的 `minerU` 引擎解析PDF文档，如果不需要本地解析pdf选这个版本（推荐）。
@@ -81,7 +81,7 @@ uv add docutranslate[docling]
 
 ```bash
 # 初始化环境
-git clone https://github.com/xunbu/docutranslate.git
+git clone https://github.com/therealtimex/docutranslate.git
 
 cd docutranslate
 
@@ -445,7 +445,7 @@ if __name__ == "__main__":
 
 如果您选择 `docling` 作为文档解析引擎（`convert_engine="docling"`），它会在首次使用时从 Hugging Face 下载所需的模型。
 
-> 更好的选择是在[github releases](https://github.com/xunbu/docutranslate/releases)下载`docling_artifact.zip`解压到工作目录下。
+> 更好的选择是在[github releases](https://github.com/therealtimex/docutranslate/releases)下载`docling_artifact.zip`解压到工作目录下。
 
 **下载`docling`模型网络问题解决方案:**
 
@@ -465,7 +465,7 @@ os.environ['HF_ENDPOINT'] = 'https://hf-mirror.com'
 
 2. **离线使用 (提前下载模型包)**:
 
-* 从 [GitHub Releases](https://github.com/xunbu/docutranslate/releases) 下载 `docling_artifact.zip`。
+* 从 [GitHub Releases](https://github.com/therealtimex/docutranslate/releases) 下载 `docling_artifact.zip`。
 * 将其解压到您的项目目录中。
 * 在配置中指定模型路径（若模型不在脚本同级目录里）：
 
@@ -508,11 +508,11 @@ A: 软件默认不使用系统代理，可以在`TranslatorConfig中令system_pr
 
 ## Star History
 
-<a href="https://www.star-history.com/#xunbu/docutranslate&Date">
+<a href="https://www.star-history.com/#therealtimex/docutranslate&Date">
  <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=xunbu/docutranslate&type=Date&theme=dark" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=xunbu/docutranslate&type=Date" />
-   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=xunbu/docutranslate&type=Date" />
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=therealtimex/docutranslate&type=Date&theme=dark" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=therealtimex/docutranslate&type=Date" />
+   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=therealtimex/docutranslate&type=Date" />
  </picture>
 </a>
 
