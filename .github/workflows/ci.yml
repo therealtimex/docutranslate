@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [ "realtimex-dev" ]
+  push:
+    branches: [ "realtimex-dev" ]
+
+jobs:
+  build-and-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Sync environment (light)
+        run: |
+          uv sync --group dev-light
+
+      - name: Build package
+        run: |
+          uv build
+
+      - name: CLI help sanity check
+        run: |
+          uv run -m docutranslate.cli -h
+
+      - name: Smoke test passthrough (no LLM)
+        run: |
+          uv run -m docutranslate.cli translate examples/2206.01062v1.md \
+            --skip-translate --formats markdown --out-dir output
+          test -f output/2206.01062v1_translated.md
+
