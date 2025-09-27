@@ -2134,22 +2134,6 @@ async def main_page(request: Request):
             ">DocuTranslate - 交互式文档翻译<",
             ">DocuTranslate - Interactive Document Translation<",
         )
-    # Inject a lightweight client-side language switcher
-    switcher = (
-        "<script>(function(){var qs=new URLSearchParams(window.location.search);"
-        "var stored=localStorage.getItem('DOCUTRANSLATE_LANG');"
-        f"var current=qs.get('lang')||stored||'{lang}';"
-        "if(stored && stored!==qs.get('lang')){qs.set('lang',stored);"
-        "var url=window.location.pathname+'?'+qs.toString();window.history.replaceState(null,'',url);}"
-        "var c=document.createElement('div');c.style.position='fixed';c.style.top='10px';c.style.right='10px';c.style.zIndex='1050';"
-        "c.innerHTML='<select id=\\"dt-lang-select\\" class=\\"form-select form-select-sm\\" style=\\"width:120px\\\">"
-        "<option value=\\"en\\">English</option><option value=\\"zh\\">中文</option></select>';"
-        "document.addEventListener('DOMContentLoaded',function(){document.body.appendChild(c);var s=document.getElementById('dt-lang-select');s.value=(current==='zh'?'zh':'en');s.addEventListener('change',function(){var v=this.value;localStorage.setItem('DOCUTRANSLATE_LANG',v);var p=new URLSearchParams(window.location.search);p.set('lang',v);window.location.search=p.toString();});});})();</script>"
-    )
-    if "</body>" in content:
-        content = content.replace("</body>", switcher + "</body>")
-    else:
-        content += switcher
     return HTMLResponse(content=content, headers=no_cache_headers)
 
 
@@ -2172,22 +2156,6 @@ async def main_page_admin(request: Request):
             ">DocuTranslate - 交互式文档翻译<",
             ">DocuTranslate - Interactive Document Translation<",
         )
-    # Inject switcher here as well
-    switcher = (
-        "<script>(function(){var qs=new URLSearchParams(window.location.search);"
-        "var stored=localStorage.getItem('DOCUTRANSLATE_LANG');"
-        f"var current=qs.get('lang')||stored||'{lang}';"
-        "if(stored && stored!==qs.get('lang')){qs.set('lang',stored);"
-        "var url=window.location.pathname+'?'+qs.toString();window.history.replaceState(null,'',url);}"
-        "var c=document.createElement('div');c.style.position='fixed';c.style.top='10px';c.style.right='10px';c.style.zIndex='1050';"
-        "c.innerHTML='<select id=\\"dt-lang-select\\" class=\\"form-select form-select-sm\\" style=\\"width:120px\\\">"
-        "<option value=\\"en\\">English</option><option value=\\"zh\\">中文</option></select>';"
-        "document.addEventListener('DOMContentLoaded',function(){document.body.appendChild(c);var s=document.getElementById('dt-lang-select');s.value=(current==='zh'?'zh':'en');s.addEventListener('change',function(){var v=this.value;localStorage.setItem('DOCUTRANSLATE_LANG',v);var p=new URLSearchParams(window.location.search);p.set('lang',v);window.location.search=p.toString();});});})();</script>"
-    )
-    if "</body>" in content:
-        content = content.replace("</body>", switcher + "</body>")
-    else:
-        content += switcher
     return HTMLResponse(content=content, headers=no_cache_headers)
 
 

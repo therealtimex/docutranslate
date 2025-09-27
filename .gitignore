@@ -10,6 +10,11 @@ tests/
 docutranslate/output/
 # Virtual environments
 .venv
+# OS and local env files
+.DS_Store
+.env
+.env.*
+!.env.example
 #idea
 .idea/
 #claude

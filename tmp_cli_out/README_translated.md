@@ -5,11 +5,11 @@
 <h1 align="center">DocuTranslate</h1>
 
 <p align="center">
-  <a href="https://github.com/xunbu/docutranslate/stargazers"><img src="https://img.shields.io/github/stars/xunbu/docutranslate?style=flat-square&logo=github&color=blue" alt="GitHub stars"></a>
-  <a href="https://github.com/xunbu/docutranslate/releases"><img src="https://img.shields.io/github/downloads/xunbu/docutranslate/total?logo=github&style=flat-square" alt="GitHub Downloads"></a>
+  <a href="https://github.com/therealtimex/docutranslate/stargazers"><img src="https://img.shields.io/github/stars/therealtimex/docutranslate?style=flat-square&logo=github&color=blue" alt="GitHub stars"></a>
+  <a href="https://github.com/therealtimex/docutranslate/releases"><img src="https://img.shields.io/github/downloads/therealtimex/docutranslate/total?logo=github&style=flat-square" alt="GitHub Downloads"></a>
   <a href="https://pypi.org/project/docutranslate/"><img src="https://img.shields.io/pypi/v/docutranslate?style=flat-square" alt="PyPI version"></a>
   <a href="https://www.python.org/"><img src="https://img.shields.io/badge/Python-3.11+-3776AB?logo=python&logoColor=white&style=flat-square" alt="Python Version"></a>
-  <a href="./LICENSE"><img src="https://img.shields.io/github/license/xunbu/docutranslate?style=flat-square" alt="License"></a>
+  <a href="./LICENSE"><img src="https://img.shields.io/github/license/therealtimex/docutranslate?style=flat-square" alt="License"></a>
 </p>
 
 <p align="center">
@@ -54,7 +54,7 @@
 ## All-in-One Packages
 
 For users who want to get started quickly, we provide all-in-one packages
-on [GitHub Releases](https://github.com/xunbu/docutranslate/releases). Simply download, unzip, and enter your AI
+on [GitHub Releases](https://github.com/therealtimex/docutranslate/releases). Simply download, unzip, and enter your AI
 platform API-Key to start using.
 
 - **DocuTranslate**: Standard version, uses the online `minerU` engine to parse PDF documents. Choose this version if
@@ -99,7 +99,7 @@ uv add "docutranslate[docling]"
 
 ```bash
 # Initialize environment
-git clone https://github.com/xunbu/docutranslate.git
+git clone https://github.com/therealtimex/docutranslate.git
 
 cd docutranslate
 
@@ -521,7 +521,7 @@ If you choose `docling` as the document parsing engine (`convert_engine="docling
 models from Hugging Face on first use.
 
 > A better option is to download `docling_artifact.zip`
-> from [GitHub releases](https://github.com/xunbu/docutranslate/releases) and unzip it to your working directory.
+> from [GitHub releases](https://github.com/therealtimex/docutranslate/releases) and unzip it to your working directory.
 
 **Solution for network issues when downloading `docling` models:**
 
@@ -542,7 +542,7 @@ os.environ['HF_ENDPOINT'] = 'https://hf-mirror.com'
 
 2. **Offline use (download the model package in advance)**:
 
-* Download `docling_artifact.zip` from [GitHub Releases](https://github.com/xunbu/docutranslate/releases).
+* Download `docling_artifact.zip` from [GitHub Releases](https://github.com/therealtimex/docutranslate/releases).
 * Unzip it to your project directory.
 * Specify the model path in the configuration (if the model is not in the same directory as the script):
 
@@ -587,11 +587,11 @@ A: The software does not use a proxy by default. You can enable it by setting th
 
 ## Star History
 
-<a href="https://www.star-history.com/#xunbu/docutranslate&Date">
+<a href="https://www.star-history.com/#therealtimex/docutranslate&Date">
  <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=xunbu/docutranslate&type=Date&theme=dark" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=xunbu/docutranslate&type=Date" />
-   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=xunbu/docutranslate&type=Date" />
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=therealtimex/docutranslate&type=Date&theme=dark" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=therealtimex/docutranslate&type=Date" />
+   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=therealtimex/docutranslate&type=Date" />
  </picture>
 </a>
 
