@@ -12,6 +12,7 @@ from typing import Literal, Callable, Any
 from urllib.parse import urlparse
 
 import httpx
+import os
 
 from docutranslate.logger import global_logger
 from docutranslate.utils.utils import get_httpx_proxies
@@ -22,14 +23,14 @@ ThinkingMode = Literal["enable", "disable", "default"]
 
 
 class AgentResultError(ValueError):
-    """一个特殊的异常，用于表示结果由AI正常返回，但返回的结果有问题。该错误不计入总错误数"""
+    """AI returned a response but it is invalid. Not counted as a hard error."""
 
     def __init__(self, message):
         super().__init__(message)
 
 
 class PartialAgentResultError(ValueError):
-    """一个特殊的异常，用于表示结果不完整但包含了部分成功的数据，以便触发重试。该错误不计入总错误数"""
+    """Partial/incomplete result to trigger retry. Not counted as a hard error."""
 
     def __init__(self, message, partial_result: dict):
         super().__init__(message)
@@ -44,7 +45,7 @@ class AgentConfig:
     model_id: str
     temperature: float = 0.7
     concurrent: int = 30
-    timeout: int = 1200  # 单位(秒)，这个值是httpx.TimeOut中read的值,并非总的超时时间
+    timeout: int = 1200  # seconds (httpx read timeout)
     thinking: ThinkingMode = "disable"
     retry: int = 2
     system_proxy_enable: bool = False
@@ -61,14 +62,14 @@ class TotalErrorCounter:
         with self.lock:
             self.count += 1
             if self.count > self.max_errors_count:
-                self.logger.info(f"错误响应过多")
+                self.logger.info("Too many error responses")
             return self.reach_limit()
 
     def reach_limit(self):
         return self.count > self.max_errors_count
 
 
-# 仅使用多线程时用以计数
+# For thread-mode progress counting only
 class PromptsCounter:
     def __init__(self, total: int, logger: logging.Logger):
         self.lock = Lock()
@@ -79,20 +80,20 @@ class PromptsCounter:
     def add(self):
         with self.lock:
             self.count += 1
-            self.logger.info(f"多线程-已完成：{self.count}/{self.total}")
+            self.logger.info(f"Thread progress: {self.count}/{self.total}")
 
 
 def extract_token_info(response_data: dict) -> tuple[int, int, int, int]:
     """
-    从API响应中提取token信息
+    Extract token usage info from provider responses.
 
-    支持多种response格式:
-    1. 格式1: usage.input_tokens_details.cached_tokens 和 usage.output_tokens_details.reasoning_tokens
-    2. 格式2: usage.prompt_tokens_details.cached_tokens
-    3. 格式3: usage.prompt_cache_hit_tokens 和 usage.completion_tokens_details.reasoning_tokens
+    Supported shapes:
+    1) usage.input_tokens_details.cached_tokens and usage.output_tokens_details.reasoning_tokens
+    2) usage.prompt_tokens_details.cached_tokens
+    3) usage.prompt_cache_hit_tokens and usage.completion_tokens_details.reasoning_tokens
 
     Args:
-        response_data: API响应数据
+        response_data: API response JSON
 
     Returns:
         tuple: (input_tokens, cached_tokens, output_tokens, reasoning_tokens)
@@ -104,35 +105,35 @@ def extract_token_info(response_data: dict) -> tuple[int, int, int, int]:
     input_tokens = usage.get("prompt_tokens", 0)
     output_tokens = usage.get("completion_tokens", 0)
 
-    # 初始化token详细统计
+    # Initialize token details
     cached_tokens = 0
     reasoning_tokens = 0
     try:
-        # 尝试从不同格式获取cached_tokens
-        # 格式1: input_tokens_details.cached_tokens
+        # Try multiple shapes for cached_tokens
+        # shape 1: input_tokens_details.cached_tokens
         if (
             "input_tokens_details" in usage
             and "cached_tokens" in usage["input_tokens_details"]
         ):
             cached_tokens = usage["input_tokens_details"]["cached_tokens"]
-        # 格式2: prompt_tokens_details.cached_tokens
+        # shape 2: prompt_tokens_details.cached_tokens
         elif (
             "prompt_tokens_details" in usage
             and "cached_tokens" in usage["prompt_tokens_details"]
         ):
             cached_tokens = usage["prompt_tokens_details"]["cached_tokens"]
-        # 格式3: prompt_cache_hit_tokens (直接在usage下)
+        # shape 3: prompt_cache_hit_tokens (under usage)
         elif "prompt_cache_hit_tokens" in usage:
             cached_tokens = usage["prompt_cache_hit_tokens"]
 
-        # 尝试从不同格式获取reasoning_tokens
-        # 格式1: output_tokens_details.reasoning_tokens
+        # Try multiple shapes for reasoning_tokens
+        # shape 1: output_tokens_details.reasoning_tokens
         if (
             "output_tokens_details" in usage
             and "reasoning_tokens" in usage["output_tokens_details"]
         ):
             reasoning_tokens = usage["output_tokens_details"]["reasoning_tokens"]
-        # 格式2: completion_tokens_details.reasoning_tokens
+        # shape 2: completion_tokens_details.reasoning_tokens
         elif (
             "completion_tokens_details" in usage
             and "reasoning_tokens" in usage["completion_tokens_details"]
@@ -140,7 +141,7 @@ def extract_token_info(response_data: dict) -> tuple[int, int, int, int]:
             reasoning_tokens = usage["completion_tokens_details"]["reasoning_tokens"]
         return input_tokens, cached_tokens, output_tokens, reasoning_tokens
     except TypeError as e:
-        print(f"获取token发生错误:{e.__repr__()}")
+        print(f"Token usage extraction error: {e!r}")
         return -1, -1, -1, -1
 
 
@@ -240,10 +241,10 @@ class Agent:
         self.thinking = config.thinking
         self.logger = config.logger
         self.total_error_counter = TotalErrorCounter(logger=self.logger)
-        # 新增：用于统计最终未解决的错误
+        # Track unresolved errors
         self.unresolved_error_lock = Lock()
         self.unresolved_error_count = 0
-        # 新增：用于统计token使用情况
+        # Track token usage
         self.token_counter = TokenCounter(logger=self.logger)
 
         self.retry = config.retry
@@ -264,10 +265,24 @@ class Agent:
     ):
         if temperature is None:
             temperature = self.temperature
+        # Default OpenAI-compatible headers
         headers = {
             "Content-Type": "application/json",
             "Authorization": f"Bearer {self.key}",
         }
+        # Provider-specific header adjustments
+        if self.domain == "generativelanguage.googleapis.com":
+            # Gemini OpenAI-compatible endpoint expects x-goog-api-key in many environments
+            headers.pop("Authorization", None)
+            headers["x-goog-api-key"] = self.key
+        elif self.domain.endswith("openrouter.ai") or self.domain == "openrouter.ai":
+            # OpenRouter recommends HTTP-Referer and X-Title for identification
+            ref = os.getenv("OPENROUTER_REFERRER") or os.getenv("HTTP_REFERER")
+            title = os.getenv("OPENROUTER_TITLE")
+            if ref:
+                headers["HTTP-Referer"] = ref
+            if title:
+                headers["X-Title"] = title
         data = {
             "model": self.model_id,
             "messages": [
@@ -301,7 +316,7 @@ class Agent:
 
         headers, data = self._prepare_request_data(prompt, system_prompt)
         should_retry = False
-        is_hard_error = False  # 新增标志，用于区分是否为硬错误
+        is_hard_error = False  # mark hard errors
         current_partial_result = None
         input_tokens = 0
         output_tokens = 0
@@ -317,19 +332,19 @@ class Agent:
             # print(f"【测试】resp:\n{response.json()}")
             result = response.json()["choices"][0]["message"]["content"]
 
-            # 获取token使用情况
+            # Extract token usage
             response_data = response.json()
             input_tokens, cached_tokens, output_tokens, reasoning_tokens = (
                 extract_token_info(response_data)
             )
 
-            # 更新token计数器
+            # Update token counters
             self.token_counter.add(
                 input_tokens, cached_tokens, output_tokens, reasoning_tokens
             )
 
             if retry_count > 0:
-                self.logger.info(f"重试成功 (第 {retry_count}/{self.retry} 次尝试)。")
+                self.logger.info(f"Retry succeeded ({retry_count}/{self.retry}).")
 
             # print(f"result:=============================================================\n{result}\n================\n")
             return (
@@ -339,29 +354,28 @@ class Agent:
             )
 
         except AgentResultError as e:
-            self.logger.error(f"AI返回结果有误: {e}")
+            self.logger.error(f"AI returned invalid result: {e}")
             should_retry = True
-        # 专门捕获部分翻译错误（软错误）
+        # Partial (soft) errors
         except PartialAgentResultError as e:
-            # print(f"【测试】\nprompt:\n{prompt}\nresp:\n{result}")
-            self.logger.error(f"收到部分返回结果，将尝试重试: {e}")
+            self.logger.error(f"Partial result received; will retry: {e}")
             current_partial_result = e.partial_result
             should_retry = True
-            # is_hard_error 保持 False
+            # keep is_hard_error False
 
-        # 捕获硬错误
+        # Hard errors
         except httpx.HTTPStatusError as e:
             self.logger.error(
-                f"AI请求HTTP状态错误 (async): {e.response.status_code} - {e.response.text}"
+                f"HTTP status error (async): {e.response.status_code} - {e.response.text}"
             )
             should_retry = True
             is_hard_error = True
         except httpx.RequestError as e:
-            self.logger.error(f"AI请求连接错误 (async): {repr(e)}")
+            self.logger.error(f"Request error (async): {e!r}")
             should_retry = True
             is_hard_error = True
         except (KeyError, IndexError, ValueError) as e:
-            self.logger.error(f"AI响应格式或值错误 (async), 将尝试重试: {repr(e)}")
+            self.logger.error(f"Response format/value error (async), will retry: {e!r}")
             should_retry = True
             is_hard_error = True
 
@@ -369,12 +383,12 @@ class Agent:
             best_partial_result = current_partial_result
 
         if should_retry and retry and retry_count < self.retry:
-            # 仅在硬错误时才增加总错误计数
+            # Increment error counter only for hard errors
             if is_hard_error:
                 if retry_count == 0:
                     if self.total_error_counter.add():
-                        self.logger.error("错误次数过多，已达到上限，不再重试。")
-                        # 新增：当因为达到错误上限而不再重试时，增加未解决错误计数
+                        self.logger.error("Too many errors; reached limit. Not retrying.")
+                        # increment unresolved error count
                         with self.unresolved_error_lock:
                             self.unresolved_error_count += 1
                         return (
@@ -387,8 +401,8 @@ class Agent:
                             )
                         )
                 elif self.total_error_counter.reach_limit():
-                    self.logger.error("错误次数过多，已达到上限，不再为该请求重试。")
-                    # 新增：当因为达到错误上限而不再重试时，增加未解决错误计数
+                    self.logger.error("Too many errors; not retrying this request.")
+                    # increment unresolved error count
                     with self.unresolved_error_lock:
                         self.unresolved_error_count += 1
                     return (
@@ -401,7 +415,7 @@ class Agent:
                         )
                     )
 
-            self.logger.info(f"正在重试第 {retry_count + 1}/{self.retry} 次...")
+            self.logger.info(f"Retrying {retry_count + 1}/{self.retry} ...")
             await asyncio.sleep(0.5)
             return await self.send_async(
                 client,
@@ -416,13 +430,13 @@ class Agent:
             )
         else:
             if should_retry:
-                self.logger.error(f"所有重试均失败，已达到重试次数上限。")
-                # 新增：当所有重试失败后，增加未解决错误计数
+                self.logger.error("All retries failed; reached retry limit.")
+                # increment unresolved error count
                 with self.unresolved_error_lock:
                     self.unresolved_error_count += 1
 
             if best_partial_result:
-                self.logger.info("所有重试失败，但存在部分翻译结果，将使用该结果。")
+                self.logger.info("All retries failed; using best partial result.")
                 return best_partial_result
 
             return (
@@ -445,16 +459,16 @@ class Agent:
         )
         total = len(prompts)
         self.logger.info(
-            f"base-url:{self.baseurl},model-id:{self.model_id},concurrent:{max_concurrent},temperature:{self.temperature},system_proxy:{self.system_proxy_enable}"
+            f"base-url:{self.baseurl}, model-id:{self.model_id}, concurrent:{max_concurrent}, temperature:{self.temperature}, system_proxy:{self.system_proxy_enable}"
         )
-        self.logger.info(f"预计发送{total}个请求，并发请求数:{max_concurrent}")
+        self.logger.info(f"Scheduling {total} requests; concurrency: {max_concurrent}")
         self.total_error_counter.max_errors_count = (
             len(prompts) // MAX_REQUESTS_PER_ERROR
         )
 
-        # 新增：在每次批量发送前重置计数器
+        # Reset counters before batch
         self.unresolved_error_count = 0
-        # 重置token计数器
+        # Reset token counter
         self.token_counter.reset()
 
         count = 0
@@ -464,8 +478,8 @@ class Agent:
         proxies = get_httpx_proxies() if self.system_proxy_enable else None
 
         limits = httpx.Limits(
-            max_connections=self.max_concurrent * 2,  # 为重试和并发预留空间
-            max_keepalive_connections=self.max_concurrent,  # 保持活动的连接数
+            max_connections=self.max_concurrent * 2,
+            max_keepalive_connections=self.max_concurrent,
         )
 
         async with httpx.AsyncClient(
@@ -484,7 +498,7 @@ class Agent:
                     )
                     nonlocal count
                     count += 1
-                    self.logger.info(f"协程-已完成{count}/{total}")
+                    self.logger.info(f"Coroutine progress: {count}/{total}")
                     return result
 
             for p_text in prompts:
@@ -493,20 +507,20 @@ class Agent:
 
             results = await asyncio.gather(*tasks, return_exceptions=False)
 
-            # 新增：在所有任务完成后打印未解决的错误总数
+            # After completion, log unresolved errors
             self.logger.info(
-                f"所有请求处理完毕。未解决的错误总数: {self.unresolved_error_count}"
+                f"All requests done. Unresolved error count: {self.unresolved_error_count}"
             )
 
-            # 新增：打印token使用统计
+            # Token usage stats
             token_stats = self.token_counter.get_stats()
             if token_stats["input_tokens"] < 0:
-                self.logger.info("Token统计失败")
+                self.logger.info("Token stats extraction failed")
             else:
                 self.logger.info(
-                    f"Token使用统计 - 输入: {token_stats['input_tokens'] / 1000:.2f}K(含cached: {token_stats['cached_tokens'] / 1000:.2f}K), "
-                    f"输出: {token_stats['output_tokens'] / 1000:.2f}K(含reasoning: {token_stats['reasoning_tokens'] / 1000:.2f}K), "
-                    f"总计: {token_stats['total_tokens'] / 1000:.2f}K"
+                    f"Token usage - input: {token_stats['input_tokens'] / 1000:.2f}K (cached: {token_stats['cached_tokens'] / 1000:.2f}K), "
+                    f"output: {token_stats['output_tokens'] / 1000:.2f}K (reasoning: {token_stats['reasoning_tokens'] / 1000:.2f}K), "
+                    f"total: {token_stats['total_tokens'] / 1000:.2f}K"
                 )
 
             return results
@@ -687,18 +701,18 @@ class Agent:
         error_result_handler: ErrorResultHandlerType = None,
     ) -> list[Any]:
         self.logger.info(
-            f"base-url:{self.baseurl},model-id:{self.model_id},concurrent:{self.max_concurrent},temperature:{self.temperature},system_proxy:{self.system_proxy_enable}"
+            f"base-url:{self.baseurl}, model-id:{self.model_id}, concurrent:{self.max_concurrent}, temperature:{self.temperature}, system_proxy:{self.system_proxy_enable}"
         )
         self.logger.info(
-            f"预计发送{len(prompts)}个请求，并发请求数:{self.max_concurrent}"
+            f"Scheduling {len(prompts)} requests; concurrency: {self.max_concurrent}"
         )
         self.total_error_counter.max_errors_count = (
             len(prompts) // MAX_REQUESTS_PER_ERROR
         )
 
-        # 新增：在每次批量发送前重置计数器
+        # Reset counters before batch
         self.unresolved_error_count = 0
-        # 重置token计数器
+        # Reset token counter
         self.token_counter.reset()
 
         counter = PromptsCounter(len(prompts), self.logger)
@@ -709,8 +723,8 @@ class Agent:
         result_handlers = itertools.repeat(result_handler, len(prompts))
         error_result_handlers = itertools.repeat(error_result_handler, len(prompts))
         limits = httpx.Limits(
-            max_connections=self.max_concurrent * 2,  # 允许连接复用
-            max_keepalive_connections=self.max_concurrent,  # 保持活跃连接
+            max_connections=self.max_concurrent * 2,
+            max_keepalive_connections=self.max_concurrent,
         )
         proxies = get_httpx_proxies() if self.system_proxy_enable else None
         with httpx.Client(
@@ -730,20 +744,20 @@ class Agent:
                 )
                 output_list = list(results_iterator)
 
-        # 新增：在所有任务完成后打印未解决的错误总数
+        # After completion, log unresolved errors
         self.logger.info(
-            f"所有请求处理完毕。未解决的错误总数: {self.unresolved_error_count}"
+            f"All requests done. Unresolved error count: {self.unresolved_error_count}"
         )
 
-        # 新增：打印token使用统计
+        # Token usage stats
         token_stats = self.token_counter.get_stats()
         if token_stats["input_tokens"] < 0:
-            self.logger.info("Token统计失败")
+            self.logger.info("Token stats extraction failed")
         else:
             self.logger.info(
-                f"Token使用统计 - 输入: {token_stats['input_tokens'] / 1000:.2f}K(含cached: {token_stats['cached_tokens'] / 1000:.2f}K), "
-                f"输出: {token_stats['output_tokens'] / 1000:.2f}K(含reasoning: {token_stats['reasoning_tokens'] / 1000:.2f}K), "
-                f"总计: {token_stats['total_tokens'] / 1000:.2f}K"
+                f"Token usage - input: {token_stats['input_tokens'] / 1000:.2f}K (cached: {token_stats['cached_tokens'] / 1000:.2f}K), "
+                f"output: {token_stats['output_tokens'] / 1000:.2f}K (reasoning: {token_stats['reasoning_tokens'] / 1000:.2f}K), "
+                f"total: {token_stats['total_tokens'] / 1000:.2f}K"
             )
 
         return output_list

@@ -5,7 +5,6 @@ readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
     "httpx==0.27.2",
-    "fastapi[standard]>=0.115.12",
     "jsonpath-ng>=1.7.0",
     "openpyxl>=3.1.5",
     "xlsx2html>=0.6.2",
@@ -24,6 +23,7 @@ dynamic = ["version"]
 
 [project.optional-dependencies]
 docling = ["opencv-python>=4.11.0.86", "docling>=2.40.0", "hf-xet>=1.1.10"]
+webui = ["fastapi[standard]>=0.115.12", "uvicorn>=0.30.0"]
 
 [dependency-groups]
 dev = ["opencv-python>=4.11.0.86", "docling>=2.40.0", "hf-xet>=1.1.10"]

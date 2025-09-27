@@ -13,4 +13,6 @@ docutranslate/output/
 #idea
 .idea/
 #claude
-.claude/
+.claude/.env
+.env
+.DS_Store

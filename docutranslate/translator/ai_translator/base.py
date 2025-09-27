@@ -48,7 +48,7 @@ class AiTranslator(Translator[T]):
             config.base_url is None or config.api_key is None or config.model_id is None
         ):
             raise ValueError(
-                "skip_translate不为false时，base_url、api_key、model_id为必填项"
+                "When skip_translate is False, base_url, api_key, and model_id are required"
             )
 
         if config.glossary_generate_enable:

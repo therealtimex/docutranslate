@@ -198,6 +198,35 @@ Notes
 - For PDFs on dev-light, use `--convert-engine mineru` (requires `MINERU_TOKEN`) or `mineru_local` if you have MinerU installed locally.
 ```
 
+## Language
+
+The CLI and Web UI are English-first and support a Chinese locale.
+
+- Default: English. Override with the top-level CLI flag `--lang en|zh` or the env var `DOCUTRANSLATE_LANG`.
+- Web UI also respects `DOCUTRANSLATE_LANG` for the initial page language.
+- A language switcher (EN/中文) appears at the top-right of the Web UI and persists your choice in `localStorage`.
+- Example: `docutranslate --lang zh translate input.md --skip-translate --formats markdown --out-dir output`.
+
+## Providers (Multi-Provider Setup)
+
+DocuTranslate works with any OpenAI-compatible endpoint. Configure via `.env` or flags.
+
+- Required keys: `OPENAI_BASE_URL`, `OPENAI_API_KEY`, `OPENAI_MODEL`.
+- See `.env.example` for ready-to-uncomment blocks for OpenAI, OpenRouter, Gemini, Deepseek, Zhipu, Hunyuan, Dashscope, Volcengine, SiliconFlow, LM Studio, Ollama, DMXAPI, Juguang.
+- Special cases:
+  - Gemini: uses `x-goog-api-key` when base URL is `generativelanguage.googleapis.com`.
+  - OpenRouter: you can set `OPENROUTER_REFERRER` and `OPENROUTER_TITLE` for identification.
+
+## Agent Mode (orchestration-friendly)
+
+To wire the CLI in agent runtimes (e.g., realtimex.ai), use structured outputs:
+
+- `--emit-manifest <path>`: writes a JSON manifest with inputs, outputs, settings, and timing.
+- `--progress jsonl`: prints JSONL step events (build/read/translate/export) to stdout.
+- `--docpkg`: treat input as a document package directory (e.g., from docling CLI). Auto-detects `index.html` or `document.md`.
+- Exit codes: `0 OK`, `10 invalid_input`, `20 dependency_missing`, `30 llm_error`, `40 exporter_error`.
+
+
 Basic examples
 
 ```bash

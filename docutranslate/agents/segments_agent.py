@@ -76,14 +76,14 @@ class SegmentsTranslateAgent(Agent):
 
     def _result_handler(self, result: str, origin_prompt: str, logger: Logger):
         """
-        处理成功的API响应。
-        - 如果键完全匹配，返回翻译结果。
-        - 如果键不匹配，构造一个部分成功的结果，并通过 PartialTranslationError 异常抛出，以触发重试。
-        - 其他错误（如JSON解析失败、模型偷懒）则抛出普通 ValueError 触发重试。
+        Handle a successful API response.
+        - If keys fully match, return translations.
+        - If keys mismatch, construct a partial result and raise PartialAgentResultError to trigger retry.
+        - For hard errors (e.g., JSON parsing), raise an AgentResultError.
         """
         if result == "":
             if origin_prompt.strip() != "":
-                raise AgentResultError("result为空值但原文不为空")
+                raise AgentResultError("Empty result while original is non-empty")
             return {}
         try:
             result = fix_json_string(result)
@@ -91,33 +91,33 @@ class SegmentsTranslateAgent(Agent):
             repaired_result = json_repair.loads(result)
 
             if not isinstance(repaired_result, dict):
-                raise AgentResultError(f"Agent返回结果不是dict的json形式, result: {result}")
+                raise AgentResultError(f"Agent returned non-dict JSON, result: {result}")
 
             if repaired_result == original_chunk:
-                raise AgentResultError("翻译结果与原文完全相同，疑似翻译失败，将进行重试。")
+                raise AgentResultError("Translation equals original; likely failed. Will retry.")
 
             original_keys = set(original_chunk.keys())
             result_keys = set(repaired_result.keys())
 
-            # 如果键不完全匹配
+            # If keys mismatch
             if original_keys != result_keys:
-                # 仍然先构造一个最完整的“部分结果”
+                # Build best-effort partial result
                 final_chunk = {}
                 common_keys = original_keys.intersection(result_keys)
                 missing_keys = original_keys - result_keys
                 extra_keys = result_keys - original_keys
 
-                logger.warning(f"翻译结果的键与原文不匹配！将尝试重试。")
-                if missing_keys: logger.warning(f"缺失的键: {missing_keys}")
-                if extra_keys: logger.warning(f"多余的键: {extra_keys}")
+                logger.warning("Key mismatch between original and result; will retry.")
+                if missing_keys: logger.warning(f"Missing keys: {missing_keys}")
+                if extra_keys: logger.warning(f"Extra keys: {extra_keys}")
 
                 for key in common_keys:
                     final_chunk[key] = str(repaired_result[key])
                 for key in missing_keys:
                     final_chunk[key] = str(original_chunk[key])
 
-                # 抛出自定义异常，将部分结果和错误信息一起传递出去
-                raise PartialAgentResultError("键不匹配，触发重试", partial_result=final_chunk)
+                # Raise partial result error to trigger retry
+                raise PartialAgentResultError("Key mismatch; trigger retry", partial_result=final_chunk)
 
             # 如果键完全匹配（理想情况），正常返回
             for key, value in repaired_result.items():
@@ -126,13 +126,13 @@ class SegmentsTranslateAgent(Agent):
             return repaired_result
 
         except (RuntimeError, JSONDecodeError) as e:
-            # 对于JSON解析等硬性错误，继续抛出普通ValueError
-            raise AgentResultError(f"结果处理失败: {e.__repr__()}")
+            # Hard errors (e.g., JSON parse)
+            raise AgentResultError(f"Result handling failed: {e!r}")
 
     def _error_result_handler(self, origin_prompt: str, logger: Logger):
         """
-        处理在所有重试后仍然失败的请求。
-        作为备用方案，返回原文内容，并将所有值转换为字符串。
+        Handle requests that failed after all retries.
+        As a fallback, return original content with values coerced to strings.
         """
         if origin_prompt == "":
             return {}
@@ -143,8 +143,8 @@ class SegmentsTranslateAgent(Agent):
                 original_chunk[key] = f"{value}"
             return original_chunk
         except (RuntimeError, JSONDecodeError):
-            logger.error(f"原始prompt也不是有效的json格式: {origin_prompt}")
-            # 如果原始prompt本身也无效，返回一个清晰的错误对象
+            logger.error(f"Original prompt is not valid JSON: {origin_prompt}")
+            # Original prompt invalid as well; return an explicit error object
             return {"error": f"{origin_prompt}"}
 
     def send_segments(self, segments: list[str], chunk_size: int) -> list[str]:
@@ -159,17 +159,17 @@ class SegmentsTranslateAgent(Agent):
         for chunk in translated_chunks:
             try:
                 if not isinstance(chunk, dict):
-                    self.logger.warning(f"接收到的chunk不是有效的字典，已跳过: {chunk}")
+                    self.logger.warning(f"Chunk is not a valid dict; skipped: {chunk}")
                     continue
                 for key, val in chunk.items():
                     if key in indexed_translated:
                         indexed_translated[key] = val
                     else:
-                        self.logger.warning(f"在结果chunk中发现未知键 '{key}'，已忽略。")
+                        self.logger.warning(f"Unknown key in results chunk '{key}'; ignored.")
             except (AttributeError, TypeError) as e:
-                self.logger.error(f"处理chunk时发生类型或属性错误，已跳过。Chunk: {chunk}, 错误: {e.__repr__()}")
+                self.logger.error(f"Type/attribute error while processing chunk; skipped. Chunk: {chunk}, error: {e!r}")
             except Exception as e:
-                self.logger.error(f"处理chunk时发生未知错误: {e.__repr__()}")
+                self.logger.error(f"Unknown error while processing chunk: {e!r}")
 
         # 重建最终列表
         result = []
@@ -197,18 +197,18 @@ class SegmentsTranslateAgent(Agent):
         for chunk in translated_chunks:
             try:
                 if not isinstance(chunk, dict):
-                    self.logger.error(f"接收到的chunk不是有效的字典，已跳过: {chunk}")
+                    self.logger.error(f"Chunk is not a valid dict; skipped: {chunk}")
                     continue
                 for key, val in chunk.items():
                     if key in indexed_translated:
                         # 此处不再需要 str(val)，因为 _result_handler 已经处理好了
                         indexed_translated[key] = val
                     else:
-                        self.logger.warning(f"在结果chunk中发现未知键 '{key}'，已忽略。")
+                        self.logger.warning(f"Unknown key in results chunk '{key}'; ignored.")
             except (AttributeError, TypeError) as e:
-                self.logger.error(f"处理chunk时发生类型或属性错误，已跳过。Chunk: {chunk}, 错误: {e.__repr__()}")
+                self.logger.error(f"Type/attribute error while processing chunk; skipped. Chunk: {chunk}, error: {e!r}")
             except Exception as e:
-                self.logger.error(f"处理chunk时发生未知错误: {e.__repr__()}")
+                self.logger.error(f"Unknown error while processing chunk: {e!r}")
 
         # 重建最终列表
         result = []

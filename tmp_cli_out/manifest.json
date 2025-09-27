@@ -1,0 +1,42 @@
+{
+  "version": "1.4.6",
+  "input": {
+    "path": "/Users/ledangtrung/GitHub/docutranslate/examples/Template - Simple Strategic Plan.docx",
+    "suffix": ".docx",
+    "size": 411755,
+    "docpkg_root": null
+  },
+  "workflow": "DocxWorkflow",
+  "settings": {
+    "to_lang": "French",
+    "skip_translate": false,
+    "formats": [
+      "docx",
+      "html"
+    ],
+    "concurrent": 5,
+    "chunk_size": 3000,
+    "model_id": "gpt-4o-mini",
+    "env_file": ".env",
+    "lang": "en"
+  },
+  "outputs": [
+    {
+      "type": "docx",
+      "path": "/Users/ledangtrung/GitHub/docutranslate/tmp_cli_out/Template - Simple Strategic Plan_translated.docx",
+      "is_text": false
+    },
+    {
+      "type": "html",
+      "path": "/Users/ledangtrung/GitHub/docutranslate/tmp_cli_out/Template - Simple Strategic Plan_translated.html",
+      "is_text": true
+    }
+  ],
+  "attachments": [],
+  "metrics": {
+    "read_ms": 0,
+    "translate_ms": 13085,
+    "export_ms": 78,
+    "total_ms": 13163
+  }
+}

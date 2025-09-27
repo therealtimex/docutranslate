@@ -26,7 +26,7 @@ from typing import (
 
 import httpx
 import uvicorn
-from fastapi import FastAPI, HTTPException, APIRouter, Body, Path as FastApiPath
+from fastapi import FastAPI, HTTPException, APIRouter, Body, Path as FastApiPath, Request
 from fastapi.openapi.docs import (
     get_swagger_ui_html,
     get_swagger_ui_oauth2_redirect_html,
@@ -92,6 +92,7 @@ from docutranslate.exporter.ass.ass2html_exporter import Ass2HTMLExporterConfig
 # ------------------------------------
 
 from docutranslate.logger import global_logger
+from docutranslate.utils.dotenv import load_env_file
 from docutranslate.translator import default_params
 from docutranslate.utils.resource_utils import resource_path
 
@@ -198,9 +199,15 @@ async def lifespan(app: FastAPI):
     tasks_log_histories.clear()
     global_logger.propagate = False
     global_logger.setLevel(logging.INFO)
-    print("应用启动完成，多任务状态已初始化。")
-    print(f"服务接口文档: http://127.0.0.1:{app.state.port_to_use}/docs")
-    print(f"请用浏览器访问 http://127.0.0.1:{app.state.port_to_use}\n")
+    lang = (os.getenv("DOCUTRANSLATE_LANG") or "en").lower()
+    if lang == "zh":
+        print("应用启动完成，多任务状态已初始化。")
+        print(f"服务接口文档: http://127.0.0.1:{app.state.port_to_use}/docs")
+        print(f"请用浏览器访问 http://127.0.0.1:{app.state.port_to_use}\n")
+    else:
+        print("Application started. Task state initialized.")
+        print(f"API docs: http://127.0.0.1:{app.state.port_to_use}/docs")
+        print(f"Open in your browser: http://127.0.0.1:{app.state.port_to_use}\n")
     yield
     # 清理任何可能残留的临时目录
     for task_id, task_state in tasks_state.items():
@@ -326,7 +333,7 @@ class BaseWorkflowParams(BaseModel):
         examples=["gpt-4o"],
     )
     to_lang: str = Field(
-        default="中文", description="目标翻译语言。", examples=["简体中文", "English"]
+        default="English", description="目标翻译语言。", examples=["简体中文", "English"]
     )
     chunk_size: int = Field(
         default=default_params["chunk_size"], description="文本分割的块大小（字符）。"
@@ -2108,7 +2115,7 @@ async def service_get_app_version():
 
 
 @app.get("/", response_class=HTMLResponse, include_in_schema=False)
-async def main_page():
+async def main_page(request: Request):
     index_path = Path(STATIC_DIR) / "index.html"
     if not index_path.exists():
         raise HTTPException(status_code=404, detail="index.html not found")
@@ -2117,11 +2124,37 @@ async def main_page():
         "Pragma": "no-cache",
         "Expires": "0",
     }
-    return FileResponse(index_path, headers=no_cache_headers)
+    content = index_path.read_text(encoding="utf-8", errors="ignore")
+    lang_q = request.query_params.get("lang")
+    lang = (lang_q or os.getenv("DOCUTRANSLATE_LANG") or "en").lower()
+    if lang == "en":
+        # Default document language and title
+        content = content.replace('lang="zh-CN"', 'lang="en"')
+        content = content.replace(
+            ">DocuTranslate - 交互式文档翻译<",
+            ">DocuTranslate - Interactive Document Translation<",
+        )
+    # Inject a lightweight client-side language switcher
+    switcher = (
+        "<script>(function(){var qs=new URLSearchParams(window.location.search);"
+        "var stored=localStorage.getItem('DOCUTRANSLATE_LANG');"
+        f"var current=qs.get('lang')||stored||'{lang}';"
+        "if(stored && stored!==qs.get('lang')){qs.set('lang',stored);"
+        "var url=window.location.pathname+'?'+qs.toString();window.history.replaceState(null,'',url);}"
+        "var c=document.createElement('div');c.style.position='fixed';c.style.top='10px';c.style.right='10px';c.style.zIndex='1050';"
+        "c.innerHTML='<select id=\\"dt-lang-select\\" class=\\"form-select form-select-sm\\" style=\\"width:120px\\\">"
+        "<option value=\\"en\\">English</option><option value=\\"zh\\">中文</option></select>';"
+        "document.addEventListener('DOMContentLoaded',function(){document.body.appendChild(c);var s=document.getElementById('dt-lang-select');s.value=(current==='zh'?'zh':'en');s.addEventListener('change',function(){var v=this.value;localStorage.setItem('DOCUTRANSLATE_LANG',v);var p=new URLSearchParams(window.location.search);p.set('lang',v);window.location.search=p.toString();});});})();</script>"
+    )
+    if "</body>" in content:
+        content = content.replace("</body>", switcher + "</body>")
+    else:
+        content += switcher
+    return HTMLResponse(content=content, headers=no_cache_headers)
 
 
 @app.get("/admin", response_class=HTMLResponse, include_in_schema=False)
-async def main_page_admin():
+async def main_page_admin(request: Request):
     index_path = Path(STATIC_DIR) / "index.html"
     if not index_path.exists():
         raise HTTPException(status_code=404, detail="index.html not found")
@@ -2130,7 +2163,32 @@ async def main_page_admin():
         "Pragma": "no-cache",
         "Expires": "0",
     }
-    return FileResponse(index_path, headers=no_cache_headers)
+    content = index_path.read_text(encoding="utf-8", errors="ignore")
+    lang_q = request.query_params.get("lang")
+    lang = (lang_q or os.getenv("DOCUTRANSLATE_LANG") or "en").lower()
+    if lang == "en":
+        content = content.replace('lang="zh-CN"', 'lang="en"')
+        content = content.replace(
+            ">DocuTranslate - 交互式文档翻译<",
+            ">DocuTranslate - Interactive Document Translation<",
+        )
+    # Inject switcher here as well
+    switcher = (
+        "<script>(function(){var qs=new URLSearchParams(window.location.search);"
+        "var stored=localStorage.getItem('DOCUTRANSLATE_LANG');"
+        f"var current=qs.get('lang')||stored||'{lang}';"
+        "if(stored && stored!==qs.get('lang')){qs.set('lang',stored);"
+        "var url=window.location.pathname+'?'+qs.toString();window.history.replaceState(null,'',url);}"
+        "var c=document.createElement('div');c.style.position='fixed';c.style.top='10px';c.style.right='10px';c.style.zIndex='1050';"
+        "c.innerHTML='<select id=\\"dt-lang-select\\" class=\\"form-select form-select-sm\\" style=\\"width:120px\\\">"
+        "<option value=\\"en\\">English</option><option value=\\"zh\\">中文</option></select>';"
+        "document.addEventListener('DOMContentLoaded',function(){document.body.appendChild(c);var s=document.getElementById('dt-lang-select');s.value=(current==='zh'?'zh':'en');s.addEventListener('change',function(){var v=this.value;localStorage.setItem('DOCUTRANSLATE_LANG',v);var p=new URLSearchParams(window.location.search);p.set('lang',v);window.location.search=p.toString();});});})();</script>"
+    )
+    if "</body>" in content:
+        content = content.replace("</body>", switcher + "</body>")
+    else:
+        content += switcher
+    return HTMLResponse(content=content, headers=no_cache_headers)
 
 
 @app.get("/docs", include_in_schema=False)
@@ -2224,16 +2282,28 @@ def find_free_port(start_port):
 
 
 def run_app(port: int | None = None):
+    # Load .env if present for GUI runs as well
+    load_env_file(None)
     initial_port = port or int(os.environ.get("DOCUTRANSLATE_PORT", 8010))
+    lang = (os.getenv("DOCUTRANSLATE_LANG") or "en").lower()
     try:
         port_to_use = find_free_port(initial_port)
         if port_to_use != initial_port:
-            print(f"端口 {initial_port} 被占用，将使用端口 {port_to_use} 代替")
-        print(f"正在启动 DocuTranslate WebUI 版本号：{__version__}")
+            if lang == "zh":
+                print(f"端口 {initial_port} 被占用，将使用端口 {port_to_use} 代替")
+            else:
+                print(f"Port {initial_port} is in use; using {port_to_use} instead")
+        if lang == "zh":
+            print(f"正在启动 DocuTranslate WebUI 版本号：{__version__}")
+        else:
+            print(f"Starting DocuTranslate WebUI version: {__version__}")
         app.state.port_to_use = port_to_use
         uvicorn.run(app, host=None, port=port_to_use, workers=1)
     except Exception as e:
-        print(f"启动失败: {e}")
+        if lang == "zh":
+            print(f"启动失败: {e}")
+        else:
+            print(f"Failed to start: {e}")
 
 
 if __name__ == "__main__":

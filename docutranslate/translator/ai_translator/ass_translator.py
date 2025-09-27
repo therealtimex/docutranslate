@@ -15,9 +15,9 @@ from docutranslate.translator.ai_translator.base import AiTranslatorConfig, AiTr
 @dataclass
 class AssTranslatorConfig(AiTranslatorConfig):
     insert_mode: Literal["replace", "append", "prepend"] = "replace"
-    separator: str = "\\N"  # ASS 中换行符是 \N
-    # 未来可扩展：指定样式名或时间范围，当前暂不实现，翻译所有 Dialogue
-    translate_regions: Optional[List[str]] = None  # 暂保留接口，但当前忽略
+    separator: str = "\\N"  # ASS line break is \N
+    # Reserved for future use (styles/time ranges); currently translate all Dialogue lines
+    translate_regions: Optional[List[str]] = None  # Not used currently
 
 
 class AssTranslator(AiTranslator):
@@ -48,11 +48,11 @@ class AssTranslator(AiTranslator):
 
     def _pre_translate(self, document: Document):
         """
-        解析 ASS 文件，提取所有 Dialogue 行的文本。
-        返回：subs 对象、待翻译条目列表、原文列表
+        Parse ASS and extract text from Dialogue lines.
+        Returns: subs object, items to translate, original texts.
         """
         try:
-            content_str = document.content.decode('utf-8-sig')  # ASS 通常带 BOM
+            content_str = document.content.decode('utf-8-sig')  # Common BOM
         except UnicodeDecodeError:
             content_str = document.content.decode('utf-8')
 
@@ -61,12 +61,12 @@ class AssTranslator(AiTranslator):
 
         for i, line in enumerate(subs):
             if line.type == "Dialogue":
-                # 仅翻译文本部分，保留样式、时间等
+                # Translate text only; keep styles and timing
                 if isinstance(line.text, str) and line.text.strip():
                     lines_to_translate.append({
-                        "index": i,  # 记录在 subs 中的位置
+                        "index": i,  # position in subs
                         "original_text": line.text,
-                        "line": line  # 保留引用，便于后续修改
+                        "line": line  # keep reference for modification
                     })
 
         original_texts = [item["original_text"] for item in lines_to_translate]
@@ -74,7 +74,7 @@ class AssTranslator(AiTranslator):
 
     def _after_translate(self, subs, lines_to_translate, translated_texts, original_texts):
         """
-        将翻译结果写回 ASS 对象，根据 insert_mode 处理。
+        Write translated text back into ASS according to insert_mode.
         """
         for i, item in enumerate(lines_to_translate):
             line = item["line"]
@@ -88,17 +88,17 @@ class AssTranslator(AiTranslator):
             elif self.insert_mode == "prepend":
                 line.text = translated_text + self.separator + original_text
             else:
-                self.logger.error(f"不支持的插入模式: {self.insert_mode}")
+                self.logger.error(f"Unsupported insert mode: {self.insert_mode}")
 
         # 输出为字符串，再编码为 bytes
         output_str = subs.to_string(format_="ass")
-        return output_str.encode('utf-8-sig')  # 带 BOM，兼容播放器
+        return output_str.encode('utf-8-sig')  # with BOM for players
 
     def translate(self, document: Document) -> Self:
         subs, lines_to_translate, original_texts = self._pre_translate(document)
 
         if not lines_to_translate:
-            print("\n未找到需要翻译的字幕行。")
+            print("\nNo subtitle lines found to translate.")
             return self
 
         if self.glossary_agent:
@@ -118,7 +118,7 @@ class AssTranslator(AiTranslator):
         subs, lines_to_translate, original_texts = await asyncio.to_thread(self._pre_translate, document)
 
         if not lines_to_translate:
-            print("\n未找到需要翻译的字幕行。")
+            print("\nNo subtitle lines found to translate.")
             return self
 
         if self.glossary_agent:

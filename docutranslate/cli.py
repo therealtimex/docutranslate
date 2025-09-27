@@ -5,9 +5,20 @@ import os
 from pathlib import Path
 import sys  # 用于检查命令行参数数量
 from typing import Any
+import time
+import json
 
 from docutranslate.translator import default_params
 from docutranslate.global_values.conditional_import import DOCLING_EXIST
+from docutranslate.utils.dotenv import load_env_file
+from docutranslate.utils.i18n import t
+
+# Exit codes for orchestration environments
+EC_OK = 0
+EC_INVALID_INPUT = 10
+EC_DEP_MISSING = 20
+EC_LLM_ERROR = 30
+EC_EXPORT_ERROR = 40
 
 
 def _infer_workflow_type_from_suffix(suffix: str) -> str:
@@ -30,6 +41,8 @@ def _infer_workflow_type_from_suffix(suffix: str) -> str:
         return "epub"
     if s in {".html", ".htm"}:
         return "html"
+    if s in {".ass"}:
+        return "ass"
     # default: try markdown-based converter
     return "markdown_based"
 
@@ -88,6 +101,7 @@ def _build_workflow(input_path: Path, ns: argparse.Namespace):
     html_cfg_docx = None
     html_cfg_srt = None
     html_cfg_epub = None
+    html_cfg_ass = None
 
     if workflow_type == "markdown_based":
         from docutranslate.exporter.md.types import ConvertEngineType
@@ -243,10 +257,23 @@ def _build_workflow(input_path: Path, ns: argparse.Namespace):
         wf_cfg = HtmlWorkflowConfig(translator_config=translator_cfg)
         return HtmlWorkflow(config=wf_cfg)
 
+    if workflow_type == "ass":
+        from docutranslate.exporter.ass.ass2html_exporter import Ass2HTMLExporterConfig
+        from docutranslate.workflow.ass_workflow import AssWorkflow, AssWorkflowConfig
+        from docutranslate.translator.ai_translator.ass_translator import AssTranslatorConfig
+        translator_cfg = AssTranslatorConfig(
+            **common_ai_args,
+            insert_mode=ns.insert_mode,
+            separator=ns.separator,
+        )
+        html_cfg_ass = Ass2HTMLExporterConfig(cdn=True)
+        wf_cfg = AssWorkflowConfig(translator_config=translator_cfg, html_exporter_config=html_cfg_ass)
+        return AssWorkflow(config=wf_cfg)
+
     raise SystemExit(f"Unsupported workflow type: {workflow_type}")
 
 
-def _export_outputs(input_path: Path, workflow: Any, out_dir: Path, explicit_formats: list[str] | None, *, save_attachments: bool=False):
+def _export_outputs(input_path: Path, workflow: Any, out_dir: Path, explicit_formats: list[str] | None, *, save_attachments: bool=False, lang: str = "en"):
     stem = input_path.stem
     suffix = input_path.suffix.lower()
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -254,7 +281,7 @@ def _export_outputs(input_path: Path, workflow: Any, out_dir: Path, explicit_for
     # Build export map similar to the web app
     from docutranslate.workflow.interfaces import (
         HTMLExportable, MDFormatsExportable, TXTExportable, JsonExportable,
-        XlsxExportable, CsvExportable, DocxExportable, SrtExportable, EpubExportable,
+        XlsxExportable, CsvExportable, DocxExportable, SrtExportable, EpubExportable, AssExportable,
     )
 
     export_map: dict[str, tuple[callable, str, bool]] = {}
@@ -278,25 +305,34 @@ def _export_outputs(input_path: Path, workflow: Any, out_dir: Path, explicit_for
         export_map["srt"] = (workflow.export_to_srt, f"{stem}_translated.srt", True)
     if isinstance(workflow, EpubExportable):
         export_map["epub"] = (workflow.export_to_epub, f"{stem}_translated.epub", False)
+    if isinstance(workflow, AssExportable):
+        export_map["ass"] = (workflow.export_to_ass, f"{stem}_translated.ass", True)
 
     selected = explicit_formats or list(export_map.keys())
+    outputs: list[dict[str, Any]] = []
     for ftype in selected:
         if ftype not in export_map:
-            print(f"跳过不支持的导出格式: {ftype}")
+            print(t("skip_unsupported_format", lang=lang, ftype=ftype))
             continue
         export_func, filename, is_text = export_map[ftype]
         try:
             content = export_func()
             data = content.encode("utf-8") if is_text else content
             (out_dir / filename).write_bytes(data)
-            print(f"已生成: {(out_dir / filename).resolve()}")
+            print(t("generated", lang=lang, path=str((out_dir / filename).resolve())))
+            outputs.append({
+                "type": ftype,
+                "path": str((out_dir / filename).resolve()),
+                "is_text": is_text,
+            })
         except ModuleNotFoundError as e:
             missing = str(e).split("'")[-2] if "'" in str(e) else str(e)
-            print(f"跳过 {ftype} 导出，缺少依赖: {missing}. 可通过 pip install -e . 安装依赖后重试。")
+            print(t("skip_export_missing_dep", lang=lang, ftype=ftype, missing=missing))
         except Exception as e:
-            print(f"导出 {ftype} 失败: {e}")
+            print(t("export_failed", lang=lang, ftype=ftype, error=str(e)))
 
     # Save attachments (like glossary) if requested
+    attachments: list[dict[str, Any]] = []
     if save_attachments:
         attachment = workflow.get_attachment()
         if attachment and attachment.attachment_dict:
@@ -307,55 +343,64 @@ def _export_outputs(input_path: Path, workflow: Any, out_dir: Path, explicit_for
                 if identifier == "docling" and doc.suffix == ".md":
                     att_name = "docling_raw.md"
                 (out_dir / att_name).write_bytes(doc.content)
-                print(f"附件已生成: {(out_dir / att_name).resolve()} ({identifier})")
+                print(t("attachment_generated", lang=lang, path=str((out_dir / att_name).resolve()), identifier=identifier))
+                attachments.append({
+                    "identifier": identifier,
+                    "path": str((out_dir / att_name).resolve()),
+                    "suffix": doc.suffix,
+                })
+    return {"outputs": outputs, "attachments": attachments}
 
 
 def _add_translate_subparser(subparsers: argparse._SubParsersAction) -> None:
     sp = subparsers.add_parser(
         "translate",
-        help="翻译一个文件并导出结果",
+        help="Translate a file and export results",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
-    sp.add_argument("input", help="要翻译的文件路径")
-    sp.add_argument("--out-dir", default="output", help="输出目录")
+    sp.add_argument("input", help="Path to the input file")
+    sp.add_argument("--out-dir", default="output", help="Output directory")
     sp.add_argument("--workflow", choices=[
-        "markdown_based", "txt", "json", "xlsx", "docx", "srt", "epub", "html"
-    ], help="覆盖自动推断的工作流类型")
-    sp.add_argument("--formats", nargs="*", help="指定导出格式，如 html markdown markdown_zip json xlsx csv docx srt epub")
-    sp.add_argument("--preserve-layout", action="store_true", help="(PDF) 使用Docling原生HTML以尽量保留版式")
-    sp.add_argument("--save-attachments", action="store_true", help="保存附件（如 docling.md、术语表等）")
+        "markdown_based", "txt", "json", "xlsx", "docx", "srt", "epub", "html", "ass"
+    ], help="Override the inferred workflow type")
+    sp.add_argument("--formats", nargs="*", help="Export formats, e.g. html markdown markdown_zip json xlsx csv docx srt epub")
+    sp.add_argument("--preserve-layout", action="store_true", help="(PDF) Use Docling native HTML to better preserve layout")
+    sp.add_argument("--save-attachments", action="store_true", help="Save attachments (e.g., docling.md, glossary)")
+    sp.add_argument("--docpkg", action="store_true", help="Input is a document package directory (e.g., from docling CLI). Auto-detect index.html or document.md")
+    sp.add_argument("--emit-manifest", help="Write JSON manifest to this path")
+    sp.add_argument("--progress", choices=["none", "jsonl"], default="none", help="Emit step-by-step progress events")
 
     # AI and behavior
-    sp.add_argument("--skip-translate", action="store_true", help="只做解析/导出，不调用LLM")
-    sp.add_argument("--base-url", help="LLM API基地址，默认读取 OPENAI_BASE_URL")
-    sp.add_argument("--api-key", help="LLM API密钥，默认读取 OPENAI_API_KEY")
-    sp.add_argument("--model-id", help="模型ID，默认读取 OPENAI_MODEL")
-    sp.add_argument("--to-lang", dest="to_lang", default="中文", help="目标语言")
-    sp.add_argument("--custom-prompt", help="自定义翻译Prompt文本")
+    sp.add_argument("--skip-translate", action="store_true", help="Parse/export only; do not call LLM")
+    sp.add_argument("--base-url", help="LLM API base URL; defaults to OPENAI_BASE_URL")
+    sp.add_argument("--api-key", help="LLM API key; defaults to OPENAI_API_KEY")
+    sp.add_argument("--model-id", help="Model ID; defaults to OPENAI_MODEL")
+    sp.add_argument("--to-lang", dest="to_lang", default="English", help="Target language")
+    sp.add_argument("--custom-prompt", help="Custom translation prompt")
 
-    sp.add_argument("--chunk-size", type=int, default=default_params["chunk_size"], help="分块大小")
-    sp.add_argument("--concurrent", type=int, default=default_params["concurrent"], help="并发数量")
-    sp.add_argument("--temperature", type=float, default=default_params["temperature"], help="温度参数")
-    sp.add_argument("--timeout", type=int, default=default_params["timeout"], help="超时(秒)")
-    sp.add_argument("--thinking", choices=["default", "enable", "disable"], default=default_params["thinking"], help="思考模式")
-    sp.add_argument("--retry", type=int, default=default_params["retry"], help="失败重试次数")
+    sp.add_argument("--chunk-size", type=int, default=default_params["chunk_size"], help="Chunk size")
+    sp.add_argument("--concurrent", type=int, default=default_params["concurrent"], help="Concurrency")
+    sp.add_argument("--temperature", type=float, default=default_params["temperature"], help="Temperature")
+    sp.add_argument("--timeout", type=int, default=default_params["timeout"], help="Timeout (seconds)")
+    sp.add_argument("--thinking", choices=["default", "enable", "disable"], default=default_params["thinking"], help="Thinking mode (provider-specific)")
+    sp.add_argument("--retry", type=int, default=default_params["retry"], help="Retry count on failure")
 
     # Insert mode for structured types
     sp.add_argument("--insert-mode", choices=["replace", "append", "prepend"], default="replace",
-                    help="译文插入模式(适用于txt/xlsx/docx/srt/epub/html)")
-    sp.add_argument("--separator", default="\n", help="append/prepend时使用的分隔符")
+                    help="Insert mode (for txt/xlsx/docx/srt/epub/html)")
+    sp.add_argument("--separator", default="\n", help="Separator used in append/prepend modes")
 
     # JSON options
-    sp.add_argument("--json-path", action="append", help="JSONPath表达式，可多次指定。默认 $..*")
+    sp.add_argument("--json-path", action="append", help="JSONPath expression; can be repeated. Default: $..*")
 
     # XLSX options
-    sp.add_argument("--xlsx-regions", nargs="*", help="XLSX 翻译区域列表，如 Sheet1!A1:B10 C:D E5 …")
+    sp.add_argument("--xlsx-regions", nargs="*", help="XLSX translation regions, e.g. Sheet1!A1:B10 C:D E5 …")
 
     # Markdown-based convert options
-    sp.add_argument("--convert-engine", choices=["mineru", "mineru_local", "docling", "identity"], help="markdown_based解析引擎")
-    sp.add_argument("--mineru-token", help="MinerU API token，或使用环境变量 MINERU_TOKEN")
-    sp.add_argument("--mineru-formula-ocr", action="store_true", help="MinerU公式OCR开关")
-    sp.add_argument("--mineru-model-version", choices=["pipeline", "vlm"], default="vlm", help="MinerU模型版本")
+    sp.add_argument("--convert-engine", choices=["mineru", "mineru_local", "docling", "identity"], help="markdown_based convert engine")
+    sp.add_argument("--mineru-token", help="MinerU API token (or env MINERU_TOKEN)")
+    sp.add_argument("--mineru-formula-ocr", action="store_true", help="MinerU formula OCR switch")
+    sp.add_argument("--mineru-model-version", choices=["pipeline", "vlm"], default="vlm", help="MinerU model version")
     # mineru_local options
     sp.add_argument("--mineru-local-mode", choices=["cli_dir", "cli_zip"], default="cli_dir",
                     help="本地MinerU运行模式: 输出目录或输出zip")
@@ -365,43 +410,52 @@ def _add_translate_subparser(subparsers: argparse._SubParsersAction) -> None:
     sp.add_argument("--mineru-local-md-file", default="full.md", help="本地MinerU输出中的Markdown文件名")
 
     # Glossary options
-    sp.add_argument("--glossary-enable", action="store_true", help="启用术语表生成Agent")
-    sp.add_argument("--glossary-base-url", help="术语Agent的LLM基础URL(默认同主翻译)")
-    sp.add_argument("--glossary-api-key", help="术语Agent的LLM密钥(默认同主翻译)")
-    sp.add_argument("--glossary-model-id", help="术语Agent的模型ID(默认同主翻译)")
+    sp.add_argument("--glossary-enable", action="store_true", help="Enable glossary generation agent")
+    sp.add_argument("--glossary-base-url", help="Glossary agent base URL (defaults to main)")
+    sp.add_argument("--glossary-api-key", help="Glossary agent API key (defaults to main)")
+    sp.add_argument("--glossary-model-id", help="Glossary agent model ID (defaults to main)")
 
     sp.set_defaults(cmd="translate")
 
 
 def main():
     parser = argparse.ArgumentParser(
-        description="DocuTranslate: 文档翻译工具 (CLI + GUI)",
+        description="DocuTranslate: Document translation tool (CLI + optional GUI)",
         epilog=(
-            "示例:\n"
+            "Examples:\n"
             "  docutranslate gui -p 8081\n"
-            "  docutranslate translate ./file.docx --to-lang 中文 --base-url https://api.openai.com/v1 --model-id gpt-4o\n"
+            "  docutranslate translate ./file.docx --to-lang English --base-url https://api.openai.com/v1 --model-id gpt-4o\n"
         ),
     )
     subparsers = parser.add_subparsers(dest="cmd")
 
     # gui subcommand
-    gui = subparsers.add_parser("gui", help="启动图形界面(本地Web UI)")
-    gui.add_argument("-p", "--port", type=int, default=None, help="指定端口号(默认: 8010)")
+    gui = subparsers.add_parser("gui", help="Start local Web UI")
+    gui.add_argument("-p", "--port", type=int, default=None, help="Port (default: 8010)")
     gui.set_defaults(cmd="gui")
 
     # translate subcommand
     _add_translate_subparser(subparsers)
 
     # version subcommand
-    ver = subparsers.add_parser("version", help="显示版本号")
+    ver = subparsers.add_parser("version", help="Show version")
     ver.set_defaults(cmd="version")
 
     # backward-compatible top-level flags (minimal)
     parser.add_argument(
-        "-i", "--interactive", action="store_true", help="等价于子命令: gui"
+        "-i", "--interactive", action="store_true", help="Equivalent to subcommand: gui"
     )
     parser.add_argument(
-        "-p", "--port", type=int, default=None, help="与 --interactive 搭配时的端口号"
+        "-p", "--port", type=int, default=None, help="Port when using --interactive"
+    )
+    parser.add_argument(
+        "--env-file", help="Load environment variables from file (default: ./.env)", default=None
+    )
+    parser.add_argument(
+        "--no-env", action="store_true", help="Do not auto-load .env from current directory"
+    )
+    parser.add_argument(
+        "--lang", choices=["en", "zh"], default=os.getenv("DOCUTRANSLATE_LANG", "en"), help="Language for CLI messages (default: en)"
     )
 
     # No-arg hint
@@ -411,14 +465,32 @@ def main():
 
     args = parser.parse_args()
 
+    # Load env vars from .env unless disabled
+    env_path_used = None
+    if not getattr(args, 'no_env', False):
+        env_path_used, loaded_keys = load_env_file(args.env_file)
+        if env_path_used and args.cmd == 'translate' and args.progress == 'jsonl':
+            # emit a meta event to aid orchestration
+            print(json.dumps({"event": "env_loaded", "path": env_path_used, "count": len(loaded_keys), "ts": time.time()}, ensure_ascii=False))
+
     # Back-compat: docutranslate -i [-p]
     if args.interactive and args.cmd is None:
-        from docutranslate.app import run_app
+        try:
+            from docutranslate.app import run_app
+        except ModuleNotFoundError as e:
+            missing = str(e).split("'")[-2] if "'" in str(e) else str(e)
+            print(t("missing_optional_dependency", lang=args.lang, missing=missing))
+            raise SystemExit(EC_DEP_MISSING)
         run_app(port=args.port)
         return
 
     if args.cmd == "gui":
-        from docutranslate.app import run_app
+        try:
+            from docutranslate.app import run_app
+        except ModuleNotFoundError as e:
+            missing = str(e).split("'")[-2] if "'" in str(e) else str(e)
+            print(t("missing_optional_dependency", lang=args.lang, missing=missing))
+            raise SystemExit(EC_DEP_MISSING)
         run_app(port=args.port)
         return
 
@@ -428,9 +500,44 @@ def main():
         return
 
     if args.cmd == "translate":
-        input_path = Path(args.input)
-        if not input_path.exists() or not input_path.is_file():
-            raise SystemExit(f"找不到文件: {input_path}")
+        def _emit(event: str, data: dict[str, Any] | None = None):
+            if args.progress == "jsonl":
+                payload = {"event": event, "ts": time.time()}
+                if data:
+                    payload.update(data)
+                print(json.dumps(payload, ensure_ascii=False))
+
+        original_input = Path(args.input)
+        # Support document package input directory
+        if args.docpkg or original_input.is_dir():
+            if not original_input.exists() or not original_input.is_dir():
+                print(t("docpkg_not_found", lang=args.lang, path=str(original_input)))
+                raise SystemExit(EC_INVALID_INPUT)
+            # Prefer layout-preserving HTML if exists, else Markdown
+            html_candidate = original_input / "index.html"
+            md_candidate = original_input / "document.md"
+            chosen = None
+            if html_candidate.exists():
+                chosen = html_candidate
+                args.workflow = args.workflow or "html"
+            elif md_candidate.exists():
+                chosen = md_candidate
+                args.workflow = args.workflow or "markdown_based"
+            else:
+                # Fallback to first .md under directory
+                for p in sorted(original_input.glob("*.md")):
+                    chosen = p
+                    args.workflow = args.workflow or "markdown_based"
+                    break
+            if not chosen:
+                print(t("docpkg_missing_entry", lang=args.lang, path=str(original_input)))
+                raise SystemExit(EC_INVALID_INPUT)
+            input_path = chosen
+        else:
+            input_path = original_input
+            if not input_path.exists() or not input_path.is_file():
+                print(t("file_not_found", lang=args.lang, path=str(input_path)))
+                raise SystemExit(EC_INVALID_INPUT)
 
         # Fast path: .md passthrough when skip-translate and only need markdown output
         if (
@@ -442,17 +549,129 @@ def main():
             out_dir.mkdir(parents=True, exist_ok=True)
             out_path = out_dir / f"{input_path.stem}_translated.md"
             out_path.write_bytes(input_path.read_bytes())
-            print(f"已生成: {out_path.resolve()}")
+            print(t("generated", lang=args.lang, path=str(out_path.resolve())))
+            # Optional emit progress and manifest for orchestration
+            if args.progress == "jsonl":
+                print(json.dumps({"event": "build_workflow_start", "ts": time.time(), "path": str(input_path)}, ensure_ascii=False))
+                print(json.dumps({"event": "build_workflow_end", "ts": time.time(), "workflow": "PassthroughMD"}, ensure_ascii=False))
+                print(json.dumps({"event": "read_start", "ts": time.time()}))
+                print(json.dumps({"event": "read_end", "ts": time.time(), "ms": 0}))
+                print(json.dumps({"event": "translate_start", "ts": time.time()}))
+                print(json.dumps({"event": "translate_end", "ts": time.time(), "ms": 0}))
+                print(json.dumps({"event": "export_start", "ts": time.time()}))
+                print(json.dumps({"event": "export_end", "ts": time.time(), "ms": 0, "count": 1}))
+            if args.emit_manifest:
+                from docutranslate import __version__
+                manifest = {
+                    "version": __version__,
+                    "input": {
+                        "path": str(input_path.resolve()),
+                        "suffix": input_path.suffix.lower(),
+                        "size": input_path.stat().st_size,
+                        "docpkg_root": str(original_input.resolve()) if (args.docpkg or original_input.is_dir()) else None,
+                    },
+                    "workflow": "PassthroughMD",
+                    "settings": {
+                        "to_lang": args.to_lang,
+                        "skip_translate": args.skip_translate,
+                        "formats": ["markdown"],
+                        "concurrent": args.concurrent,
+                        "chunk_size": args.chunk_size,
+                        "model_id": args.model_id or os.getenv("OPENAI_MODEL") or "",
+                        "env_file": env_path_used,
+                    },
+                    "outputs": [{"type": "markdown", "path": str(out_path.resolve()), "is_text": True}],
+                    "attachments": [],
+                    "metrics": {"read_ms": 0, "translate_ms": 0, "export_ms": 0, "total_ms": 0},
+                }
+                man_path = Path(args.emit_manifest)
+                man_path.parent.mkdir(parents=True, exist_ok=True)
+                man_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
+                print(t("generated", lang=args.lang, path=str(man_path.resolve())))
             return
 
-        wf = _build_workflow(input_path, args)
+        _emit("build_workflow_start", {"path": str(input_path)})
+        try:
+            wf = _build_workflow(input_path, args)
+        except ModuleNotFoundError as e:
+            _emit("error", {"stage": "build", "error": str(e)})
+            print(t("missing_dependency", lang=args.lang, missing=str(e)))
+            raise SystemExit(EC_DEP_MISSING)
+        except SystemExit as e:
+            # Map common dependency-related exit to a stable code
+            msg = str(e)
+            if "docling is not installed" in msg or "mineru" in msg:
+                _emit("error", {"stage": "build", "error": msg})
+                raise SystemExit(EC_DEP_MISSING)
+            raise
+        _emit("build_workflow_end", {"workflow": wf.__class__.__name__})
+
+        _emit("read_start")
+        t_read0 = time.time()
         wf.read_path(input_path)
+        t_read1 = time.time()
+        _emit("read_end", {"ms": int((t_read1 - t_read0) * 1000)})
+
         # run translate synchronously
-        wf.translate()
+        _emit("translate_start")
+        t_tr0 = time.time()
+        try:
+            wf.translate()
+        except Exception as e:
+            _emit("error", {"stage": "translate", "error": str(e)})
+            print(f"Translation failed: {e}")
+            raise SystemExit(EC_LLM_ERROR)
+        t_tr1 = time.time()
+        _emit("translate_end", {"ms": int((t_tr1 - t_tr0) * 1000)})
 
         out_dir = Path(args.out_dir)
         formats = args.formats
-        _export_outputs(input_path, wf, out_dir, formats, save_attachments=args.save_attachments)
+        _emit("export_start")
+        t_ex0 = time.time()
+        result = _export_outputs(input_path, wf, out_dir, formats, save_attachments=args.save_attachments, lang=args.lang)
+        t_ex1 = time.time()
+        _emit("export_end", {"ms": int((t_ex1 - t_ex0) * 1000), "count": len(result.get("outputs", []))})
+
+        # Optional manifest
+        if args.emit_manifest:
+            from docutranslate import __version__
+            manifest = {
+                "version": __version__,
+                "input": {
+                    "path": str(input_path.resolve()),
+                    "suffix": input_path.suffix.lower(),
+                    "size": input_path.stat().st_size,
+                    "docpkg_root": str(original_input.resolve()) if (args.docpkg or original_input.is_dir()) else None,
+                },
+                "workflow": wf.__class__.__name__,
+                "settings": {
+                    "to_lang": args.to_lang,
+                    "skip_translate": args.skip_translate,
+                    "formats": formats,
+                    "concurrent": args.concurrent,
+                    "chunk_size": args.chunk_size,
+                    "model_id": args.model_id or os.getenv("OPENAI_MODEL") or "",
+                    "env_file": env_path_used,
+                    "lang": args.lang,
+                    "lang": args.lang,
+                },
+                "outputs": result.get("outputs", []),
+                "attachments": result.get("attachments", []),
+                "metrics": {
+                    "read_ms": int((t_read1 - t_read0) * 1000),
+                    "translate_ms": int((t_tr1 - t_tr0) * 1000),
+                    "export_ms": int((t_ex1 - t_ex0) * 1000),
+                    "total_ms": int((t_ex1 - t_read0) * 1000),
+                },
+            }
+            man_path = Path(args.emit_manifest)
+            man_path.parent.mkdir(parents=True, exist_ok=True)
+            man_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
+            print(t("generated", lang=args.lang, path=str(man_path.resolve())))
+        # If nothing exported, treat as exporter error
+        if not result.get("outputs"):
+            _emit("error", {"stage": "export", "error": "no outputs generated"})
+            raise SystemExit(EC_EXPORT_ERROR)
         return
 
     # Unknown / fallthrough

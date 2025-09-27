@@ -130,7 +130,7 @@ class DocxTranslator(AiTranslator):
             elif self.insert_mode == "prepend":
                 final_text = translated_text + self.separator + original_text
             else:
-                self.logger.error("不正确的DocxTranslatorConfig参数")
+                self.logger.error("Invalid DocxTranslatorConfig parameters")
                 final_text = translated_text
 
             if not runs:
@@ -158,7 +158,7 @@ class DocxTranslator(AiTranslator):
         """
         doc, elements_to_translate, original_texts = self._pre_translate(document)
         if not original_texts:
-            print("\n文件中没有找到需要翻译的文本内容。")
+            print("\nNo translatable text found in the document.")
             output_stream = BytesIO()
             doc.save(output_stream)
             document.content = output_stream.getvalue()
@@ -185,7 +185,7 @@ class DocxTranslator(AiTranslator):
         """
         doc, elements_to_translate, original_texts = await asyncio.to_thread(self._pre_translate, document)
         if not original_texts:
-            print("\n文件中没有找到需要翻译的文本内容。")
+            print("\nNo translatable text found in the document.")
             # 在异步环境中正确保存和返回
             output_stream = BytesIO()
             doc.save(output_stream)
