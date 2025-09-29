@@ -3,13 +3,13 @@ import os
 from PyInstaller.utils.hooks import collect_all
 import doctranslate
 
-# 初始化列表
+# Initialize lists
 datas = []
 binaries = []
 hiddenimports = ['markdown.extensions.tables', 'pymdownx.arithmatex',
                 'pymdownx.superfences', 'pymdownx.highlight', 'pygments']
 
-# 先收集第三方包的资源
+# First collect third-party package resources
 for package in ['easyocr', 'docling', 'pygments']:
     try:
         tmp_ret = collect_all(package)
@@ -19,24 +19,24 @@ for package in ['easyocr', 'docling', 'pygments']:
     except Exception as e:
         print(f"Warning: Failed to collect resources for {package}: {e}")
 
-# 然后添加您的自定义资源（避免重复）
+# Then add your custom resources (avoid duplicates)
 custom_datas = [
     ('./.venv/Lib/site-packages/docling_parse/pdf_resources_v2', 'docling_parse/pdf_resources_v2'),
     ('./doctranslate/static', 'doctranslate/static'),
     ('./doctranslate/template', 'doctranslate/template')
 ]
 
-# 避免添加重复的数据
+# Avoid adding duplicate data
 for data in custom_datas:
     if data not in datas:
         datas.append(data)
 
 a = Analysis(
-    ['doctranslate/app.py'],  # 使用正斜杠
-    pathex=[],  # 添加当前工作目录到 pathex
+    ['doctranslate/app.py'],  # Use forward slashes
+    pathex=[],  # Add current working directory to pathex
     binaries=binaries,
     datas=datas,
-    hiddenimports=list(set(hiddenimports)),  # 去重
+    hiddenimports=list(set(hiddenimports)),  # Remove duplicates
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],

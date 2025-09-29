@@ -6,7 +6,7 @@ import doctranslate
 datas = [
     ('doctranslate/static', 'doctranslate/static'),
     ('doctranslate/template', 'doctranslate/template'),
-    *collect_data_files('pygments')  # 直接展开
+    *collect_data_files('pygments')  # Direct expansion
 ]
 
 hiddenimports = [
@@ -18,7 +18,7 @@ hiddenimports = [
 ]
 
 a = Analysis(
-    ['doctranslate/app.py'],  # 使用正斜杠，Windows 也支持
+    ['doctranslate/app.py'],  # Use forward slashes, Windows also supports
     pathex=[],
     binaries=[],
     datas=datas,
@@ -51,5 +51,5 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon='doctranslate.ico',  # 修正为字符串
+    icon='doctranslate.ico',  # Corrected to string
 )
