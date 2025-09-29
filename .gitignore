@@ -8,6 +8,7 @@ wheels/
 tests/resource/
 tests/
 doctranslate/output/
+doctranslate/tmp_cli_out
 # Virtual environments
 .venv
 # OS and local env files
@@ -21,3 +22,6 @@ doctranslate/output/
 .claude/.env
 .env
 .DS_Store
+/docs/codex.md
+docs/test.md
+docs/test.md

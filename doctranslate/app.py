@@ -34,7 +34,9 @@ from fastapi.openapi.docs import (
 )
 from fastapi.responses import HTMLResponse, JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
+from fastapi import Request
 from pydantic import BaseModel, Field, field_validator, model_validator, AliasChoices
+import json
 
 from doctranslate import __version__
 from doctranslate.agents.agent import ThinkingMode
@@ -95,6 +97,42 @@ from doctranslate.logger import global_logger
 from doctranslate.utils.dotenv import load_env_file
 from doctranslate.translator import default_params
 from doctranslate.utils.resource_utils import resource_path
+
+# --- Server-side i18n ---
+def load_i18n_data():
+    """Load i18n data from JSON file"""
+    try:
+        i18n_file = resource_path("static/i18nData.json")
+        with open(i18n_file, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    except Exception as e:
+        print(f"Failed to load i18n data: {e}")
+        return {"zh": {}, "en": {}}
+
+def get_user_language(request: Request = None, accept_language: str = None) -> str:
+    """Detect user's preferred language from request headers"""
+    if accept_language:
+        # Use provided accept_language header
+        lang_header = accept_language
+    elif request and hasattr(request, 'headers'):
+        # Extract from request headers
+        lang_header = request.headers.get('accept-language', '')
+    else:
+        return 'zh'  # Default fallback
+
+    # Simple language detection logic
+    if 'en' in lang_header.lower():
+        return 'en'
+    else:
+        return 'zh'  # Default to Chinese
+
+def server_i18n(key: str, lang: str = 'zh', fallback: str = None) -> str:
+    """Get localized text for server-side messages"""
+    if not hasattr(server_i18n, '_data'):
+        server_i18n._data = load_i18n_data()
+
+    translations = server_i18n._data.get(lang, server_i18n._data.get('zh', {}))
+    return translations.get(key, fallback or key)
 
 # --- 全局配置 ---
 tasks_state: Dict[str, Dict[str, Any]] = {}
@@ -793,6 +831,7 @@ async def _perform_translation(
     payload: TranslatePayload,
     file_contents: bytes,
     original_filename: str,
+    user_lang: str = 'zh',
 ):
     task_state = tasks_state[task_id]
     log_queue = tasks_log_queues[task_id]
@@ -812,16 +851,16 @@ async def _perform_translation(
     task_logger.addHandler(task_handler)
 
     task_logger.info(
-        f"后台翻译任务开始: 文件 '{original_filename}', 工作流: '{payload.workflow_type}'"
+        server_i18n("serverLogTaskStart", user_lang).format(filename=original_filename, workflow=payload.workflow_type)
     )
-    task_state["status_message"] = f"正在处理 '{original_filename}'..."
+    task_state["status_message"] = server_i18n("serverLogProcessing", user_lang).format(filename=original_filename)
     temp_dir = None
 
     try:
         # 1. 根据工作流类型选择合适的 Workflow Class
         workflow_class = WORKFLOW_DICT.get(payload.workflow_type)
         if not workflow_class:
-            raise ValueError(f"不支持的工作流类型: '{payload.workflow_type}'")
+            raise ValueError(server_i18n("serverLogUnsupportedWorkflow", user_lang).format(workflow_type=payload.workflow_type))
 
         workflow: Workflow
 
@@ -836,7 +875,7 @@ async def _perform_translation(
 
         # 2. 根据 payload 的具体类型构建配置并实例化 workflow
         if isinstance(payload, MarkdownWorkflowParams):
-            task_logger.info("构建 MarkdownBasedWorkflow 配置。")
+            task_logger.info(server_i18n("serverLogBuildMarkdownConfig", user_lang))
             translator_args = payload.model_dump(
                 include={
                     "skip_translate",
@@ -887,7 +926,7 @@ async def _perform_translation(
             workflow = MarkdownBasedWorkflow(config=workflow_config)
 
         elif isinstance(payload, TextWorkflowParams):
-            task_logger.info("构建 TXTWorkflow 配置。")
+            task_logger.info(server_i18n("serverLogBuildTxtConfig", user_lang))
             translator_args = payload.model_dump(
                 include={
                     "skip_translate",
@@ -924,7 +963,7 @@ async def _perform_translation(
             workflow = TXTWorkflow(config=workflow_config)
 
         elif isinstance(payload, JsonWorkflowParams):
-            task_logger.info("构建 JsonWorkflow 配置。")
+            task_logger.info(server_i18n("serverLogBuildJsonConfig", user_lang))
             translator_args = payload.model_dump(
                 include={
                     "skip_translate",
@@ -960,7 +999,7 @@ async def _perform_translation(
             workflow = JsonWorkflow(config=workflow_config)
 
         elif isinstance(payload, XlsxWorkflowParams):
-            task_logger.info("构建 XlsxWorkflow 配置。")
+            task_logger.info(server_i18n("serverLogBuildXlsxConfig", user_lang))
             translator_args = payload.model_dump(
                 include={
                     "skip_translate",
@@ -998,7 +1037,7 @@ async def _perform_translation(
             workflow = XlsxWorkflow(config=workflow_config)
 
         elif isinstance(payload, DocxWorkflowParams):
-            task_logger.info("构建 DocxWorkflow 配置。")
+            task_logger.info(server_i18n("serverLogBuildDocxConfig", user_lang))
             translator_args = payload.model_dump(
                 include={
                     "skip_translate",
@@ -1035,7 +1074,7 @@ async def _perform_translation(
             workflow = DocxWorkflow(config=workflow_config)
 
         elif isinstance(payload, SrtWorkflowParams):
-            task_logger.info("构建 SrtWorkflow 配置。")
+            task_logger.info(server_i18n("serverLogBuildSrtConfig", user_lang))
             translator_args = payload.model_dump(
                 include={
                     "skip_translate",
@@ -1072,7 +1111,7 @@ async def _perform_translation(
             workflow = SrtWorkflow(config=workflow_config)
 
         elif isinstance(payload, EpubWorkflowParams):
-            task_logger.info("构建 EpubWorkflow 配置。")
+            task_logger.info(server_i18n("serverLogBuildEpubConfig", user_lang))
             translator_args = payload.model_dump(
                 include={
                     "skip_translate",
@@ -1110,7 +1149,7 @@ async def _perform_translation(
 
         # --- HTML WORKFLOW LOGIC START ---
         elif isinstance(payload, HtmlWorkflowParams):
-            task_logger.info("构建 HtmlWorkflow 配置。")
+            task_logger.info(server_i18n("serverLogBuildHtmlConfig", user_lang))
             translator_args = payload.model_dump(
                 include={
                     "skip_translate",
@@ -1146,7 +1185,7 @@ async def _perform_translation(
 
         # --- ASS WORKFLOW LOGIC START ---
         elif isinstance(payload, AssWorkflowParams):
-            task_logger.info("构建 AssWorkflow 配置。")
+            task_logger.info(server_i18n("serverLogBuildAssConfig", user_lang))
             translator_args = payload.model_dump(
                 include={
                     "skip_translate",
@@ -1184,7 +1223,7 @@ async def _perform_translation(
         # --- ASS WORKFLOW LOGIC END ---
 
         else:
-            raise TypeError(f"工作流类型 '{payload.workflow_type}' 的处理逻辑未实现。")
+            raise TypeError(server_i18n("serverLogWorkflowNotImplemented", user_lang).format(workflow_type=payload.workflow_type))
 
         # 3. 读取文件内容并执行翻译
         file_stem = Path(original_filename).stem
@@ -1193,7 +1232,7 @@ async def _perform_translation(
         await workflow.translate_async()
 
         # 4. 任务成功，生成所有可下载文件并存储
-        task_logger.info("翻译完成，正在生成临时结果文件...")
+        task_logger.info(server_i18n("serverLogTranslationComplete", user_lang))
         temp_dir = tempfile.mkdtemp(prefix=f"doctranslate_{task_id}_")
         task_state["temp_dir"] = temp_dir
         downloadable_files = {}
@@ -1309,10 +1348,10 @@ async def _perform_translation(
                     "path": file_path,
                     "filename": filename,
                 }
-                task_logger.info(f"成功生成 {file_type} 文件")
+                task_logger.info(server_i18n("serverLogFileGenSuccess", user_lang).format(file_type=file_type))
             except Exception as export_error:
                 task_logger.error(
-                    f"生成 {file_type} 文件时出错: {export_error}", exc_info=True
+                    server_i18n("serverLogFileGenError", user_lang).format(file_type=file_type, error=export_error), exc_info=True
                 )
 
         # 处理附件文件
@@ -1320,7 +1359,7 @@ async def _perform_translation(
         attachment_object = workflow.get_attachment()
         if attachment_object and attachment_object.attachment_dict:
             task_logger.info(
-                f"发现 {len(attachment_object.attachment_dict)} 个附件，正在处理..."
+                server_i18n("serverLogAttachmentFound", user_lang).format(count=len(attachment_object.attachment_dict))
             )
             for identifier, doc in attachment_object.attachment_dict.items():
                 try:
@@ -1334,11 +1373,11 @@ async def _perform_translation(
                         "filename": attachment_filename,
                     }
                     task_logger.info(
-                        f"成功生成附件 '{identifier}' 文件: {attachment_filename}"
+                        server_i18n("serverLogAttachmentSuccess", user_lang).format(identifier=identifier, filename=attachment_filename)
                     )
                 except Exception as attachment_error:
                     task_logger.error(
-                        f"生成附件 '{identifier}' 文件时出错: {attachment_error}",
+                        server_i18n("serverLogAttachmentError", user_lang).format(identifier=identifier, error=attachment_error),
                         exc_info=True,
                     )
 
@@ -1347,7 +1386,7 @@ async def _perform_translation(
         duration = end_time - task_state["task_start_time"]
         task_state.update(
             {
-                "status_message": f"翻译成功！用时 {duration:.2f} 秒。",
+                "status_message": server_i18n("serverLogSuccess", user_lang).format(duration=duration),
                 "download_ready": True,
                 "error_flag": False,
                 "task_end_time": end_time,
@@ -1355,17 +1394,17 @@ async def _perform_translation(
                 "attachment_files": attachment_files,
             }
         )
-        task_logger.info(f"翻译成功完成，用时 {duration:.2f} 秒。")
+        task_logger.info(server_i18n("serverLogSuccess", user_lang).format(duration=duration))
 
     except asyncio.CancelledError:
         end_time = time.time()
         duration = end_time - task_state["task_start_time"]
         task_logger.info(
-            f"翻译任务 '{original_filename}' 已被取消 (用时 {duration:.2f} 秒)."
+            server_i18n("serverLogCancelled", user_lang).format(duration=duration)
         )
         task_state.update(
             {
-                "status_message": f"翻译任务已取消 (用时 {duration:.2f} 秒).",
+                "status_message": server_i18n("serverLogCancelled", user_lang).format(duration=duration),
                 "error_flag": False,
                 "download_ready": False,
                 "task_end_time": end_time,
@@ -1374,11 +1413,11 @@ async def _perform_translation(
     except Exception as e:
         end_time = time.time()
         duration = end_time - task_state["task_start_time"]
-        error_message = f"翻译失败: {e}"
+        error_message = server_i18n("serverLogFailed", user_lang).format(error=str(e))
         task_logger.error(error_message, exc_info=True)
         task_state.update(
             {
-                "status_message": f"翻译过程中发生错误 (用时 {duration:.2f} 秒): {e}",
+                "status_message": server_i18n("serverLogError", user_lang).format(duration=duration, error=str(e)),
                 "error_flag": True,
                 "download_ready": False,
                 "task_end_time": end_time,
@@ -1392,10 +1431,10 @@ async def _perform_translation(
 
         if task_state["error_flag"] and temp_dir and os.path.isdir(temp_dir):
             shutil.rmtree(temp_dir)
-            task_logger.info(f"因任务失败，已清理临时目录")
+            task_logger.info(server_i18n("serverLogTempDirCleaned", user_lang))
             task_state["temp_dir"] = None
 
-        task_logger.info(f"后台翻译任务 '{original_filename}' 处理结束。")
+        task_logger.info(server_i18n("serverLogTaskComplete", user_lang).format(filename=original_filename))
         task_logger.removeHandler(task_handler)
 
 
@@ -1405,6 +1444,7 @@ async def _start_translation_task(
     payload: TranslatePayload,
     file_contents: bytes,
     original_filename: str,
+    user_lang: str = 'zh',
 ):
     if task_id not in tasks_state:
         tasks_state[task_id] = _create_default_task_state()
@@ -1428,7 +1468,7 @@ async def _start_translation_task(
     task_state.update(
         {
             "is_processing": True,
-            "status_message": "任务初始化中...",
+            "status_message": server_i18n("serverLogTaskInit", user_lang),
             "error_flag": False,
             "download_ready": False,
             "workflow_instance": None,
@@ -1452,7 +1492,7 @@ async def _start_translation_task(
         except asyncio.QueueEmpty:
             break
 
-    initial_log_msg = f"收到新的翻译请求: {original_filename}"
+    initial_log_msg = server_i18n("serverLogNewRequest", user_lang).format(filename=original_filename)
     print(f"[{task_id}] {initial_log_msg}")
     log_history.append(initial_log_msg)
     await log_queue.put(initial_log_msg)
@@ -1460,7 +1500,7 @@ async def _start_translation_task(
     try:
         loop = asyncio.get_running_loop()
         task = loop.create_task(
-            _perform_translation(task_id, payload, file_contents, original_filename)
+            _perform_translation(task_id, payload, file_contents, original_filename, user_lang)
         )
         task_state["current_task_ref"] = task
         return {
@@ -1502,7 +1542,7 @@ def _cancel_translation_logic(task_id: str):
 
     print(f"[{task_id}] 收到取消翻译任务的请求。")
     task_to_cancel.cancel()
-    task_state["status_message"] = "正在取消任务..."
+    task_state["status_message"] = server_i18n("serverLogTaskCancelling", 'zh')
     return {"cancelled": True, "message": "取消请求已发送。请等待状态更新。"}
 
 
@@ -1542,16 +1582,21 @@ def _cancel_translation_logic(task_id: str):
     },
 )
 async def service_translate(
+    http_request: Request,
     request: TranslateServiceRequest = Body(
         ..., description="翻译任务的详细参数和文件内容。"
     )
 ):
     task_id = uuid.uuid4().hex[:8]
 
+    # Detect user's preferred language from HTTP headers
+    user_lang = get_user_language(http_request)
+
     try:
         file_contents = base64.b64decode(request.file_content)
     except (binascii.Error, TypeError) as e:
-        raise HTTPException(status_code=400, detail=f"无效的Base64文件内容: {e}")
+        error_msg = server_i18n("serverLogInvalidBase64", user_lang).format(error=str(e))
+        raise HTTPException(status_code=400, detail=error_msg)
 
     try:
         response_data = await _start_translation_task(
@@ -1559,6 +1604,7 @@ async def service_translate(
             payload=request.payload,
             file_contents=file_contents,
             original_filename=request.file_name,
+            user_lang=user_lang,
         )
         return JSONResponse(content=response_data)
     except HTTPException as e:
