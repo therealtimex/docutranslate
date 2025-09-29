@@ -60,7 +60,7 @@ class MarkdownBasedWorkflow(Workflow[MarkdownBasedWorkflowConfig, Document, Mark
                 )
                 return ConverterDocling, ConverterDoclingConfig
             raise ValueError("docling is not installed")
-        raise ValueError(f"不存在{engine}解析引擎")
+        raise ValueError(f"Parser engine {engine} does not exist")
 
     def __init__(self, config: MarkdownBasedWorkflowConfig):
         super().__init__(config=config)
@@ -75,14 +75,14 @@ class MarkdownBasedWorkflow(Workflow[MarkdownBasedWorkflowConfig, Document, Mark
         if self.document_original is None:
             raise RuntimeError("File has not been read yet. Call read_path or read_bytes first.")
 
-        # 获取缓存的解析后文件
+        # Get cached parsed file
         document_cached = md_based_convert_cacher.get_cached_result(self.document_original, convert_engin,
                                                                     convert_config)
         if document_cached:
             self.attachment.add_document("md_cached",document_cached.copy())
             return document_cached
 
-        # 未缓存则解析文件
+        # Parse file if not cached
         converter_class, config_class = self._get_converter_factory(convert_engin)
         if config_class and not isinstance(convert_config, config_class):
             raise TypeError(
@@ -92,7 +92,7 @@ class MarkdownBasedWorkflow(Workflow[MarkdownBasedWorkflowConfig, Document, Mark
         if hasattr(converter,"attachments"):
             for attachment in converter.attachments:
                 self.attachment.add_attachment(attachment)
-        # 缓存解析后文件
+        # Cache parsed file
         md_based_convert_cacher.cache_result(document_md.copy(), self.document_original, convert_engin, convert_config)
 
         return document_md

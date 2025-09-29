@@ -38,7 +38,7 @@ class DoclingHTMLWorkflow(Workflow[DoclingHTMLWorkflowConfig, Document, Document
 
     def _convert_to_html(self, document: Document) -> Document:
         assert isinstance(document.name, str)
-        self.logger.info("使用 docling 生成保留布局的 HTML")
+        self.logger.info("Using docling to generate layout-preserving HTML")
         settings.debug.profile_pipeline_timings = True
         converter = DocumentConverter(format_options={
             InputFormat.PDF: PdfFormatOption(pipeline_options=self.pipeline_options)
@@ -62,16 +62,16 @@ class DoclingHTMLWorkflow(Workflow[DoclingHTMLWorkflowConfig, Document, Document
 
     def export_to_html(self, _=None) -> str:
         if self.document_translated is None:
-            raise RuntimeError("尚未翻译。请先调用 translate 或 translate_async。")
+            raise RuntimeError("Not translated yet. Please call translate or translate_async first.")
         return self.document_translated.content.decode("utf-8")
 
     def save_as_html(self, name: str = None, output_dir: str = "./output", _=None) -> Self:
         if self.document_translated is None:
-            raise RuntimeError("尚未翻译。请先调用 translate 或 translate_async。")
+            raise RuntimeError("Not translated yet. Please call translate or translate_async first.")
         from pathlib import Path
         out_dir = Path(output_dir)
         out_dir.mkdir(parents=True, exist_ok=True)
         filename = name or f"{self.document_translated.stem}.html"
         (out_dir / filename).write_bytes(self.document_translated.content)
-        self.logger.info(f"文件已保存到{(out_dir / filename).resolve()}")
+        self.logger.info(f"File saved to {(out_dir / filename).resolve()}")
         return self

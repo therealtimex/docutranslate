@@ -41,7 +41,7 @@ class ConverterDocling(X2MarkdownConverter):
         self.formula = config.formula_ocr
         artifact = Path("./docling_artifact")
         if artifact.is_dir():
-            self.logger.info("使用./docling_artifact的本地模型")
+            self.logger.info("Using local models from ./docling_artifact")
             self.artifact = artifact
         else:
             self.artifact = config.artifact
@@ -49,11 +49,11 @@ class ConverterDocling(X2MarkdownConverter):
 
     def convert(self, document) -> MarkdownDocument:
         assert isinstance(document.name, str)
-        self.logger.info(f"正在将文档转换为markdown")
+        self.logger.info(f"Converting document to markdown")
         time1 = time.time()
         document_stream = DocumentStream(name=document.name, stream=BytesIO(document.content))
         content = self.file2markdown_embed_images(document_stream)
-        self.logger.info(f"已转换为markdown，耗时{time.time() - time1}秒")
+        self.logger.info(f"Converted to markdown, time elapsed: {time.time() - time1} seconds")
         self.attachments.append(AttachMent("docling",MarkdownDocument.from_bytes(content=content.encode("utf-8"), suffix=".md", stem="docling")))
         md_document = MarkdownDocument.from_bytes(content=content.encode("utf-8"), suffix=".md", stem=document.stem)
         return md_document
@@ -82,7 +82,7 @@ class ConverterDocling(X2MarkdownConverter):
         # pipeline_options.accelerator_options= AcceleratorOptions(
         #     num_threads=4, device=AcceleratorDevice.AUTO
         # )
-        # 打印时间
+        # Print timing
         settings.debug.profile_pipeline_timings = True
         converter = DocumentConverter(format_options={
             InputFormat.PDF: PdfFormatOption(pipeline_options=pipeline_options)
@@ -92,11 +92,11 @@ class ConverterDocling(X2MarkdownConverter):
             conversion_result = converter.convert(file_path)
             result = conversion_result.document.export_to_markdown(image_mode=ImageRefMode.EMBEDDED)
         except LocalEntryNotFoundError:
-            self.logger.info(f"无法连接huggingface，正在尝试换源")
+            self.logger.info(f"Unable to connect to huggingface, trying to switch mirror")
             os.environ['HF_ENDPOINT'] = 'https://hf-mirror.com'
             conversion_result = converter.convert(file_path)
             result = conversion_result.document.export_to_markdown(image_mode=ImageRefMode.EMBEDDED)
-            # translater_logger.info(f"docling转换耗时: {conversion_result.timings["pipeline_total"].times}")
+            # translater_logger.info(f"docling conversion time: {conversion_result.timings["pipeline_total"].times}")
         return result
 
 

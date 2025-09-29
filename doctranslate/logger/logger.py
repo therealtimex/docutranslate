@@ -4,9 +4,9 @@ import logging
 
 
 
-# 创建日志对象
+# Create logger object
 global_logger = logging.getLogger("TranslaterLogger")
 global_logger.setLevel(logging.DEBUG)
-#输出到控制台
+# Output to console
 console_handler = logging.StreamHandler()
 global_logger.addHandler(console_handler)

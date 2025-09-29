@@ -29,19 +29,19 @@ class Epub2HTMLExporter(EpubExporter):
         super().__init__(config=config)
 
     def _extract_opf_path(self, zip_file):
-        """从 META-INF/container.xml 中提取 OPF 文件路径"""
+        """Extract OPF file path from META-INF/container.xml"""
         try:
             container_xml = zip_file.read('META-INF/container.xml')
             container_root = ElementTree.fromstring(container_xml)
 
-            # 查找 rootfile 元素
+            # Find rootfile element
             rootfile = container_root.find('.//{urn:oasis:names:tc:opendocument:xmlns:container}rootfile')
             if rootfile is not None:
                 return rootfile.get('full-path')
         except (KeyError, ElementTree.ParseError):
             pass
 
-        # 如果无法从 container.xml 获取，尝试常见的路径
+        # If unable to get from container.xml, try common paths
         for common_path in ['content.opf', 'OEBPS/content.opf', 'OPS/content.opf']:
             try:
                 zip_file.getinfo(common_path)
@@ -49,19 +49,19 @@ class Epub2HTMLExporter(EpubExporter):
             except KeyError:
                 continue
 
-        raise FileNotFoundError("无法找到 OPF 文件")
+        raise FileNotFoundError("Cannot find OPF file")
 
     def _parse_opf(self, opf_content):
-        """解析 OPF 文件，获取阅读顺序和文件信息"""
+        """Parse OPF file to get reading order and file information"""
         root = ElementTree.fromstring(opf_content)
 
-        # 定义命名空间
+        # Define namespaces
         ns = {
             'opf': 'http://www.idpf.org/2007/opf',
             'dc': 'http://purl.org/dc/elements/1.1/'
         }
 
-        # 获取 manifest 中的所有项目
+        # Get all items from manifest
         manifest_items = {}
         manifest = root.find('.//opf:manifest', ns)
         if manifest is not None:
@@ -74,7 +74,7 @@ class Epub2HTMLExporter(EpubExporter):
                     'media-type': media_type
                 }
 
-        # 获取 spine 中的阅读顺序
+        # Get reading order from spine
         reading_order = []
         spine = root.find('.//opf:spine', ns)
         if spine is not None:
@@ -86,63 +86,63 @@ class Epub2HTMLExporter(EpubExporter):
         return manifest_items, reading_order
 
     def _process_html_content(self, html_content, zip_file, base_path, manifest_items):
-        """处理 HTML 内容，内嵌图片和样式"""
+        """Process HTML content, embed images and styles"""
         soup = BeautifulSoup(html_content, 'html.parser')
 
-        # 处理图片
+        # Process images
         for img in soup.find_all('img'):
             src = img.get('src')
             if src:
-                # 构建完整路径
+                # Build complete path
                 img_path = self._resolve_path(base_path, src)
                 try:
                     img_data = zip_file.read(img_path)
-                    # 获取 MIME 类型
+                    # Get MIME type
                     mime_type, _ = mimetypes.guess_type(img_path)
                     if mime_type:
-                        # 转换为 base64 data URI
+                        # Convert to base64 data URI
                         img_base64 = base64.b64encode(img_data).decode('utf-8')
                         data_uri = f"data:{mime_type};base64,{img_base64}"
                         img['src'] = data_uri
                 except KeyError:
-                    # 如果图片不存在，保持原路径
+                    # If image doesn't exist, keep original path
                     pass
 
-        # 处理内联样式 (<style> 标签)
+        # Process inline styles (<style> tags)
         for style_tag in soup.find_all('style'):
             if style_tag.string:
-                # 处理 CSS 中的 url() 引用
+                # Process url() references in CSS
                 style_tag.string = self._process_css_urls(
                     style_tag.string, zip_file, base_path
                 )
 
-        # 处理外部样式表
+        # Process external stylesheets
         for link in soup.find_all('link', {'rel': 'stylesheet'}):
             href = link.get('href')
             if href:
                 css_path = self._resolve_path(base_path, href)
                 try:
                     css_content = zip_file.read(css_path).decode('utf-8')
-                    # 处理 CSS 中的 URL 引用
+                    # Process URL references in CSS
                     css_content = self._process_css_urls(css_content, zip_file, base_path)
 
-                    # 替换 link 标签为 style 标签
+                    # Replace link tag with style tag
                     style_tag = soup.new_tag('style')
                     style_tag.string = css_content
                     link.replace_with(style_tag)
                 except (KeyError, UnicodeDecodeError):
-                    # 如果样式表不存在或无法解码，移除 link 标签
+                    # If stylesheet doesn't exist or can't be decoded, remove link tag
                     link.decompose()
 
         return str(soup)
 
     def _process_css_urls(self, css_content, zip_file, base_path):
-        """处理 CSS 中的 url() 引用"""
+        """Process url() references in CSS"""
 
         def replace_url(match):
             url = match.group(1).strip('\'"')
             if url.startswith(('http://', 'https://', 'data:')):
-                return match.group(0)  # 保持外部链接不变
+                return match.group(0)  # Keep external links unchanged
 
             try:
                 resource_path = self._resolve_path(base_path, url)
@@ -154,13 +154,13 @@ class Epub2HTMLExporter(EpubExporter):
             except KeyError:
                 pass
 
-            return match.group(0)  # 保持原样
+            return match.group(0)  # Keep as is
 
-        # 匹配 url() 函数
+        # Match url() function
         return re.sub(r'url\(([^)]+)\)', replace_url, css_content)
 
     def _resolve_path(self, base_path, relative_path):
-        """解析相对路径为绝对路径"""
+        """Resolve relative path to absolute path"""
         if relative_path.startswith('/'):
             return relative_path.lstrip('/')
 
@@ -171,7 +171,7 @@ class Epub2HTMLExporter(EpubExporter):
             return relative_path
 
     def _find_html_files(self, zip_file):
-        """查找 EPUB 中的所有 HTML 文件"""
+        """Find all HTML files in EPUB"""
         html_files = []
         for file_info in zip_file.filelist:
             filename = file_info.filename
@@ -180,52 +180,52 @@ class Epub2HTMLExporter(EpubExporter):
         return sorted(html_files)
 
     # def _debug_epub_structure(self, zip_file):
-        """调试 EPUB 结构，打印所有文件"""
-        print("=== EPUB 文件结构 ===")
+        """Debug EPUB structure, print all files"""
+        print("=== EPUB File Structure ===")
         for file_info in zip_file.filelist:
-            print(f"文件: {file_info.filename}")
+            print(f"File: {file_info.filename}")
         print("==================")
 
     def export(self, document: Document) -> Document:
         """
-        将 EPUB 文件的二进制内容转换为单个 HTML 文件。
+        Convert EPUB file binary content to a single HTML file.
 
-        :param document: 包含 EPUB 二进制内容的 Document 对象。
-        :return: 包含单个 HTML 文件内容的 Document 对象。
+        :param document: Document object containing EPUB binary content.
+        :return: Document object containing single HTML file content.
         """
         epub_bytes = document.content
 
         with zipfile.ZipFile(io.BytesIO(epub_bytes), 'r') as zip_file:
-            # 调试：打印 EPUB 结构
+            # Debug: print EPUB structure
             # self._debug_epub_structure(zip_file)
 
             try:
-                # 1. 提取 OPF 文件路径
+                # 1. Extract OPF file path
                 opf_path = self._extract_opf_path(zip_file)
                 opf_content = zip_file.read(opf_path)
 
-                # 2. 解析 OPF 文件
+                # 2. Parse OPF file
                 manifest_items, reading_order = self._parse_opf(opf_content)
 
-                # print(f"OPF 路径: {opf_path}")
-                # print(f"阅读顺序: {reading_order}")
-                # print(f"清单项目: {list(manifest_items.keys())}")
+                # print(f"OPF path: {opf_path}")
+                # print(f"Reading order: {reading_order}")
+                # print(f"Manifest items: {list(manifest_items.keys())}")
 
-                # 3. 按阅读顺序读取和处理 HTML 文件
+                # 3. Read and process HTML files in reading order
                 combined_html_parts = []
                 base_path = os.path.dirname(opf_path)
 
-                # 尝试处理阅读顺序中的文件
+                # Try to process files in reading order
                 processed_files = set()
                 for html_file in reading_order:
                     html_path = self._resolve_path(base_path, html_file)
 
-                    # 尝试多种路径变体
+                    # Try multiple path variants
                     possible_paths = [
                         html_path,
-                        html_file,  # 原始路径
-                        html_file.replace('.html', ''),  # 去掉 .html 后缀
-                        html_file.replace('.htm.html', '.htm'),  # 处理双后缀
+                        html_file,  # Original path
+                        html_file.replace('.html', ''),  # Remove .html suffix
+                        html_file.replace('.htm.html', '.htm'),  # Handle double suffix
                     ]
 
                     file_found = False
@@ -236,7 +236,7 @@ class Epub2HTMLExporter(EpubExporter):
                                 html_content, zip_file, path_variant, manifest_items
                             )
 
-                            # 提取 body 内容（如果存在）
+                            # Extract body content (if exists)
                             soup = BeautifulSoup(processed_html, 'html.parser')
                             body = soup.find('body')
                             if body:
@@ -246,28 +246,28 @@ class Epub2HTMLExporter(EpubExporter):
 
                             processed_files.add(path_variant)
                             file_found = True
-                            # print(f"成功处理文件: {path_variant}")
+                            # print(f"Successfully processed file: {path_variant}")
                             break
 
                         except (KeyError, UnicodeDecodeError):
                             continue
 
                     # if not file_found:
-                    #     print(f"警告：无法找到文件 {html_file}，尝试的路径: {possible_paths}")
+                    #     print(f"Warning: Could not find file {html_file}, tried paths: {possible_paths}")
 
             except Exception as e:
-                # print(f"解析 OPF 失败，使用备用方法: {e}")
+                # print(f"Failed to parse OPF, using fallback method: {e}")
                 combined_html_parts = []
                 processed_files = set()
 
-            # 4. 如果没有成功处理任何文件，尝试直接处理所有 HTML 文件
+            # 4. If no files were processed successfully, try to process all HTML files directly
             if not combined_html_parts:
-                # print("使用备用方法：处理所有发现的 HTML 文件")
+                # print("Using fallback method: processing all found HTML files")
                 html_files = self._find_html_files(zip_file)
 
                 for html_file in html_files:
                     if html_file in processed_files:
-                        continue  # 跳过已处理的文件
+                        continue  # Skip already processed files
 
                     try:
                         html_content = zip_file.read(html_file).decode('utf-8')
@@ -283,15 +283,15 @@ class Epub2HTMLExporter(EpubExporter):
                         else:
                             combined_html_parts.append(processed_html)
 
-                        # print(f"备用方法成功处理: {html_file}")
+                        # print(f"Fallback method successfully processed: {html_file}")
 
                     except (KeyError, UnicodeDecodeError) as e:
-                        # print(f"备用方法处理失败 {html_file}: {e}")
+                        # print(f"Fallback method failed to process {html_file}: {e}")
                         continue
 
-            # 5. 组合成完整的 HTML 文档
+            # 5. Combine into complete HTML document
             if combined_html_parts:
-                # 创建基本的 HTML 结构
+                # Create basic HTML structure
                 html_content = f"""<!DOCTYPE html>
 <html lang="zh">
 <head>
@@ -327,7 +327,7 @@ class Epub2HTMLExporter(EpubExporter):
     </div>
 </body>
 </html>"""
-                # print(f"成功组合 {len(combined_html_parts)} 个部分的内容")
+                # print(f"Successfully combined {len(combined_html_parts)} parts of content")
             else:
                 html_content = f"""<!DOCTYPE html>
 <html lang="zh">
@@ -336,12 +336,12 @@ class Epub2HTMLExporter(EpubExporter):
     <title>{document.stem}</title>
 </head>
 <body>
-    <h1>错误：无法提取 EPUB 内容</h1>
-    <p>未能找到有效的 HTML 内容文件。</p>
-    <p>请检查 EPUB 文件格式是否正确。</p>
+    <h1>Error: Unable to extract EPUB content</h1>
+    <p>Could not find valid HTML content files.</p>
+    <p>Please check if the EPUB file format is correct.</p>
 </body>
 </html>"""
-                # print("警告：没有找到任何有效的 HTML 内容")
+                # print("Warning: No valid HTML content found")
 
         return Document.from_bytes(content=html_content.encode("utf-8"), suffix=".html", stem=document.stem)
 

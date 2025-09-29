@@ -40,7 +40,7 @@ class ConverterMineruLocal(X2MarkdownConverter):
             input=str(input_path), output=str(output_target)
         ))
         cmd = [self.config.cmd, *args_list]
-        self.logger.info(f"运行本地 MinerU: {' '.join(shlex.quote(x) for x in cmd)}")
+        self.logger.info(f"Running local MinerU: {' '.join(shlex.quote(x) for x in cmd)}")
         try:
             res = subprocess.run(
                 cmd,
@@ -55,11 +55,11 @@ class ConverterMineruLocal(X2MarkdownConverter):
                 self.logger.debug(res.stderr.strip())
         except FileNotFoundError as e:
             raise RuntimeError(
-                f"找不到本地 MinerU 可执行文件: {self.config.cmd}. 请安装并确保在PATH中，或使用 --mineru-local-cmd 指定路径。"
+                f"Local MinerU executable not found: {self.config.cmd}. Please install and ensure it's in PATH, or use --mineru-local-cmd to specify the path."
             ) from e
         except subprocess.CalledProcessError as e:
             msg = e.stderr or e.stdout or str(e)
-            raise RuntimeError(f"执行本地 MinerU 失败: {msg}")
+            raise RuntimeError(f"Local MinerU execution failed: {msg}")
 
     def _zip_dir(self, dir_path: Path) -> bytes:
         buffer = BytesIO()
@@ -88,7 +88,7 @@ class ConverterMineruLocal(X2MarkdownConverter):
                 except Exception:
                     md_name = "full.md"
                 content = embed_inline_image_from_zip(zip_bytes, filename_in_zip=md_name)
-                # 附件保留zip
+                # Preserve zip as attachment
                 self.attachments.append(AttachMent("mineru", Document.from_bytes(zip_bytes, ".zip", "mineru")))
                 md_doc = MarkdownDocument.from_bytes(content=content.encode("utf-8"), suffix=".md",
                                                      stem=document.stem)
@@ -105,29 +105,29 @@ class ConverterMineruLocal(X2MarkdownConverter):
                     if len(md_candidates) == 1:
                         md_path = md_candidates[0]
                     elif len(md_candidates) == 0:
-                        raise RuntimeError("本地 MinerU 输出目录中未找到任何 .md 文件")
+                        raise RuntimeError("No .md files found in local MinerU output directory")
                     else:
-                        raise RuntimeError("本地 MinerU 输出目录中存在多个 .md 文件，请通过 md_filename 指定")
+                        raise RuntimeError("Multiple .md files found in local MinerU output directory, please specify via md_filename")
 
                 # Pack dir to zip and reuse embed helper
                 zip_bytes = self._zip_dir(out_dir)
                 md_name_in_zip = str(md_path.relative_to(out_dir)).replace(os.sep, "/")
                 content = embed_inline_image_from_zip(zip_bytes, filename_in_zip=md_name_in_zip)
-                # 附件保留zip
+                # Preserve zip as attachment
                 self.attachments.append(AttachMent("mineru", Document.from_bytes(zip_bytes, ".zip", "mineru")))
                 md_doc = MarkdownDocument.from_bytes(content=content.encode("utf-8"), suffix=".md",
                                                      stem=document.stem)
                 return md_doc
 
             else:
-                raise ValueError(f"不支持的 mode: {self.config.mode}")
+                raise ValueError(f"Unsupported mode: {self.config.mode}")
 
     def convert(self, document: Document) -> MarkdownDocument:
-        self.logger.info("使用本地 MinerU 将文件转换为 Markdown")
+        self.logger.info("Converting file to Markdown using local MinerU")
         return self._convert_common(document)
 
     async def convert_async(self, document: Document) -> MarkdownDocument:
-        self.logger.info("(异步) 使用本地 MinerU 将文件转换为 Markdown")
+        self.logger.info("(Async) Converting file to Markdown using local MinerU")
         return await asyncio.to_thread(self._convert_common, document)
 
     def support_format(self) -> list[str]:
