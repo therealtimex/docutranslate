@@ -1,14 +1,33 @@
 name: Release
 
 on:
-  push:
-    tags:
-      - "v*"
   workflow_dispatch:
 
 jobs:
+  tag:
+    name: Create Git Tag
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Get version
+        id: get_version
+        run: echo ::set-output name=VERSION::$(python -c "import re; print(re.search(r'__version__ = \"(.*?)\"', open('doctranslate/__init__.py').read()).group(1))")
+
+      - name: Create Git Tag
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.get_version.outputs.VERSION }}
+          generate_release_notes: true
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   build:
     name: Build sdist and wheel
+    needs: tag
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
