@@ -1,15 +1,15 @@
 <p align="center">
-  <img src="./DocuTranslate.png" alt="プロジェクトロゴ" style="width: 150px">
+  <img src="./doctranslate.png" alt="プロジェクトロゴ" style="width: 150px">
 </p>
 
-<h1 align="center">DocuTranslate</h1>
+<h1 align="center">doctranslate</h1>
 
 <p align="center">
-  <a href="https://github.com/therealtimex/docutranslate/stargazers"><img src="https://img.shields.io/github/stars/therealtimex/docutranslate?style=flat-square&logo=github&color=blue" alt="GitHub stars"></a>
-  <a href="https://github.com/therealtimex/docutranslate/releases"><img src="https://img.shields.io/github/downloads/therealtimex/docutranslate/total?logo=github&style=flat-square" alt="GitHub Downloads"></a>
-  <a href="https://pypi.org/project/docutranslate/"><img src="https://img.shields.io/pypi/v/docutranslate?style=flat-square" alt="PyPI version"></a>
+  <a href="https://github.com/therealtimex/doctranslate/stargazers"><img src="https://img.shields.io/github/stars/therealtimex/doctranslate?style=flat-square&logo=github&color=blue" alt="GitHub stars"></a>
+  <a href="https://github.com/therealtimex/doctranslate/releases"><img src="https://img.shields.io/github/downloads/therealtimex/doctranslate/total?logo=github&style=flat-square" alt="GitHub Downloads"></a>
+  <a href="https://pypi.org/project/doctranslate/"><img src="https://img.shields.io/pypi/v/doctranslate?style=flat-square" alt="PyPI version"></a>
   <a href="https://www.python.org/"><img src="https://img.shields.io/badge/Python-3.11+-3776AB?logo=python&logoColor=white&style=flat-square" alt="Python Version"></a>
-  <a href="./LICENSE"><img src="https://img.shields.io/github/license/therealtimex/docutranslate?style=flat-square" alt="License"></a>
+  <a href="./LICENSE"><img src="https://img.shields.io/github/license/therealtimex/doctranslate?style=flat-square" alt="License"></a>
 </p>
 
 <p align="center">
@@ -46,10 +46,10 @@
 
 ## 統合パッケージ
 
-すぐに始めたいユーザーのために、[GitHub Releases](https://github.com/therealtimex/docutranslate/releases)で統合パッケージを提供しています。ダウンロードして解凍し、AIプラットフォームのAPIキーを入力するだけで使用を開始できます。
+すぐに始めたいユーザーのために、[GitHub Releases](https://github.com/therealtimex/doctranslate/releases)で統合パッケージを提供しています。ダウンロードして解凍し、AIプラットフォームのAPIキーを入力するだけで使用を開始できます。
 
-- **DocuTranslate**: 標準版。オンラインの`minerU`エンジンを使用してPDFドキュメントを解析します。ローカルでのPDF解析が不要な場合はこのバージョンを選択してください（推奨）。
-- **DocuTranslate_full**: 完全版。`docling`ローカルPDF解析エンジンを内蔵しています。ローカルでのPDF解析が必要な場合はこのバージョンを選択してください。
+- **doctranslate**: 標準版。オンラインの`minerU`エンジンを使用してPDFドキュメントを解析します。ローカルでのPDF解析が不要な場合はこのバージョンを選択してください（推奨）。
+- **doctranslate_full**: 完全版。`docling`ローカルPDF解析エンジンを内蔵しています。ローカルでのPDF解析が必要な場合はこのバージョンを選択してください。
 
 ## インストール
 
@@ -57,10 +57,10 @@
 
 ```bash
 # 基本的なインストール
-pip install docutranslate
+pip install doctranslate
 
 # doclingを使用してローカルでPDFを解析する場合
-pip install docutranslate[docling]
+pip install doctranslate[docling]
 ```
 
 ### uvを使用
@@ -70,19 +70,19 @@ pip install docutranslate[docling]
 uv init
 
 # 基本的なインストール
-uv add docutranslate
+uv add doctranslate
 
 # docling拡張機能のインストール
-uv add docutranslate[docling]
+uv add doctranslate[docling]
 ```
 
 ### gitを使用
 
 ```bash
 # 環境の初期化
-git clone https://github.com/therealtimex/docutranslate.git
+git clone https://github.com/therealtimex/doctranslate.git
 
-cd docutranslate
+cd doctranslate
 
 uv sync
 
@@ -90,7 +90,7 @@ uv sync
 
 ## コアコンセプト：ワークフロー (Workflow)
 
-新しいDocuTranslateの中核は**ワークフロー (Workflow)**です。各ワークフローは、特定のファイルタイプ専用に設計された、完全なエンドツーエンドの翻訳パイプラインです。巨大な単一クラスと対話する代わりに、ファイルタイプに応じて適切なワークフローを選択し、設定します。
+新しいdoctranslateの中核は**ワークフロー (Workflow)**です。各ワークフローは、特定のファイルタイプ専用に設計された、完全なエンドツーエンドの翻訳パイプラインです。巨大な単一クラスと対話する代わりに、ファイルタイプに応じて適切なワークフローを選択し、設定します。
 
 **基本的な使用手順は以下の通りです：**
 
@@ -120,20 +120,20 @@ uv sync
 
 ## Web UIとAPIサービスの起動
 
-利便性のために、DocuTranslateは機能豊富なWebインターフェースとRESTful APIを提供しています。
+利便性のために、doctranslateは機能豊富なWebインターフェースとRESTful APIを提供しています。
 
 **サービスの起動:**
 
 ```bash
 # サービスを起動し、デフォルトで8010ポートをリッスンします
-docutranslate -i
+doctranslate -i
 
 # ポートを指定して起動
-docutranslate -i -p 8011
+doctranslate -i -p 8011
 
 # 環境変数でポートを指定することもできます
-export DOCUTRANSLATE_PORT=8011
-docutranslate -i
+export doctranslate_PORT=8011
+doctranslate -i
 ```
 
 -   **インタラクティブインターフェース**: サービス起動後、ブラウザで`http://127.0.0.1:8010`（または指定したポート）にアクセスしてください。
@@ -147,10 +147,10 @@ docutranslate -i
 
 ```python
 import asyncio
-from docutranslate.workflow.md_based_workflow import MarkdownBasedWorkflow, MarkdownBasedWorkflowConfig
-from docutranslate.converter.x2md.converter_mineru import ConverterMineruConfig
-from docutranslate.translator.ai_translator.md_translator import MDTranslatorConfig
-from docutranslate.exporter.md.md2html_exporter import MD2HTMLExporterConfig
+from doctranslate.workflow.md_based_workflow import MarkdownBasedWorkflow, MarkdownBasedWorkflowConfig
+from doctranslate.converter.x2md.converter_mineru import ConverterMineruConfig
+from doctranslate.translator.ai_translator.md_translator import MDTranslatorConfig
+from doctranslate.exporter.md.md2html_exporter import MD2HTMLExporterConfig
 
 
 async def main():
@@ -214,9 +214,9 @@ if __name__ == "__main__":
 
 ```python
 import asyncio
-from docutranslate.workflow.txt_workflow import TXTWorkflow, TXTWorkflowConfig
-from docutranslate.translator.ai_translator.txt_translator import TXTTranslatorConfig
-from docutranslate.exporter.txt.txt2html_exporter import TXT2HTMLExporterConfig
+from doctranslate.workflow.txt_workflow import TXTWorkflow, TXTWorkflowConfig
+from doctranslate.translator.ai_translator.txt_translator import TXTTranslatorConfig
+from doctranslate.exporter.txt.txt2html_exporter import TXT2HTMLExporterConfig
 
 
 async def main():
@@ -262,9 +262,9 @@ if __name__ == "__main__":
 ```python
 import asyncio
 
-from docutranslate.exporter.js.json2html_exporter import Json2HTMLExporterConfig
-from docutranslate.translator.ai_translator.json_translator import JsonTranslatorConfig
-from docutranslate.workflow.json_workflow import JsonWorkflowConfig, JsonWorkflow
+from doctranslate.exporter.js.json2html_exporter import Json2HTMLExporterConfig
+from doctranslate.translator.ai_translator.json_translator import JsonTranslatorConfig
+from doctranslate.workflow.json_workflow import JsonWorkflowConfig, JsonWorkflow
 
 
 async def main():
@@ -311,9 +311,9 @@ if __name__ == "__main__":
 ```python
 import asyncio
 
-from docutranslate.exporter.docx.docx2html_exporter import Docx2HTMLExporterConfig
-from docutranslate.translator.ai_translator.docx_translator import DocxTranslatorConfig
-from docutranslate.workflow.docx_workflow import DocxWorkflowConfig, DocxWorkflow
+from doctranslate.exporter.docx.docx2html_exporter import Docx2HTMLExporterConfig
+from doctranslate.translator.ai_translator.docx_translator import DocxTranslatorConfig
+from doctranslate.workflow.docx_workflow import DocxWorkflowConfig, DocxWorkflow
 
 
 async def main():
@@ -361,9 +361,9 @@ if __name__ == "__main__":
 ```python
 import asyncio
 
-from docutranslate.exporter.xlsx.xlsx2html_exporter import Xlsx2HTMLExporterConfig
-from docutranslate.translator.ai_translator.xlsx_translator import XlsxTranslatorConfig
-from docutranslate.workflow.xlsx_workflow import XlsxWorkflowConfig, XlsxWorkflow
+from doctranslate.exporter.xlsx.xlsx2html_exporter import Xlsx2HTMLExporterConfig
+from doctranslate.translator.ai_translator.xlsx_translator import XlsxTranslatorConfig
+from doctranslate.workflow.xlsx_workflow import XlsxWorkflowConfig, XlsxWorkflow
 
 
 async def main():
@@ -443,11 +443,11 @@ if __name__ == "__main__":
 
 ドキュメント解析エンジンとして`docling`を選択した場合（`convert_engine="docling"`）、初回使用時にHugging Faceから必要なモデルがダウンロードされます。
 
-> より良い選択肢は、[GitHub Releases](https://github.com/therealtimex/docutranslate/releases)から`docling_artifact.zip`をダウンロードし、作業ディレクトリに解凍することです。
+> より良い選択肢は、[GitHub Releases](https://github.com/therealtimex/doctranslate/releases)から`docling_artifact.zip`をダウンロードし、作業ディレクトリに解凍することです。
 
 **`docling`モデルのダウンロード時のネットワーク問題解決策:**
 
-1.  **Hugging Faceミラーの設定（推奨）**:
+1.  **Hugging Faceミラーの設定（推奨）**：
     *   **方法A（環境変数）**: システム環境変数`HF_ENDPOINT`を設定し、IDEまたはターミナルを再起動します。
         ```
         HF_ENDPOINT=https://hf-mirror.com
@@ -458,12 +458,12 @@ import os
     
 os.environ['HF_ENDPOINT'] = 'https://hf-mirror.com'
 ```
-2.  **オフラインでの使用（モデルパッケージを事前にダウンロード）**:
-    *   [GitHub Releases](https://github.com/therealtimex/docutranslate/releases)から`docling_artifact.zip`をダウンロードします。
+2.  **オフラインでの使用（モデルパッケージを事前にダウンロード）**：
+    *   [GitHub Releases](https://github.com/therealtimex/doctranslate/releases)から`docling_artifact.zip`をダウンロードします。
     *   プロジェクトディレクトリに解凍します。
 *   設定でモデルのパスを指定します（モデルがスクリプトと同じディレクトリにない場合）：
 ```python
-from docutranslate.converter.x2md.converter_docling import ConverterDoclingConfig
+from doctranslate.converter.x2md.converter_docling import ConverterDoclingConfig
     
 converter_config = ConverterDoclingConfig(
     artifact="./docling_artifact",  # 解凍したフォルダへのパス
@@ -478,7 +478,7 @@ converter_config = ConverterDoclingConfig(
 A: ログにどのようなエラーが出ているか確認してください。通常はAIプラットフォームの料金未払いやネットワークの問題（システムプロキシを有効にする必要があるか確認）が原因です。
 
 **Q: 8010ポートが使用中です。どうすればいいですか？**  
-A: `-p`パラメータで新しいポートを指定するか、`DOCUTRANSLATE_PORT`環境変数を設定してください。
+A: `-p`パラメータで新しいポートを指定するか、`doctranslate_PORT`環境変数を設定してください。
 
 **Q: スキャンされたPDFの翻訳はサポートしていますか？**  
 A: はい、サポートしています。強力なOCR機能を持つ`mineru`解析エンジンを使用してください。
@@ -492,18 +492,18 @@ A: 完全に可能です。以下の条件を満たす必要があります：
 2.  **ローカルPDF解析エンジン**（PDF解析にのみ必要）: `docling`エンジンを使用し、上記の「オフラインでの使用」の指示に従って事前にモデルパッケージをダウンロードします。
 
 **Q: PDF解析のキャッシュメカニズムはどのように機能しますか？**  
-A: `MarkdownBasedWorkflow`は、ドキュメント解析（ファイルからMarkdownへの変換）の結果を自動的にキャッシュし、時間とリソースの重複消費を防ぎます。キャッシュはデフォルトでメモリに保存され、直近10回の解析が記録されます。`DOCUTRANSLATE_CACHE_NUM`環境変数でキャッシュ数を変更できます。
+A: `MarkdownBasedWorkflow`は、ドキュメント解析（ファイルからMarkdownへの変換）の結果を自動的にキャッシュし、時間とリソースの重複消費を防ぎます。キャッシュはデフォルトでメモリに保存され、直近10回の解析が記録されます。`doctranslate_CACHE_NUM`環境変数でキャッシュ数を変更できます。
 
 **Q: ソフトウェアがプロキシを経由するようにするにはどうすればいいですか？**  
 A: デフォルトではシステムプロキシを使用しません。`TranslatorConfig`で`system_proxy_enable=True`と設定することで有効にできます。
 
 ## Star History
 
-<a href="https://www.star-history.com/#therealtimex/docutranslate&Date">
+<a href="https://www.star-history.com/#therealtimex/doctranslate&Date">
  <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=therealtimex/docutranslate&type=Date&theme=dark" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=therealtimex/docutranslate&type=Date" />
-   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=therealtimex/docutranslate&type=Date" />
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=therealtimex/doctranslate&type=Date&theme=dark" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=therealtimex/doctranslate&type=Date" />
+   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=therealtimex/doctranslate&type=Date" />
  </picture>
 </a>
 

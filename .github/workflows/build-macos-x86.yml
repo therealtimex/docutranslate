@@ -51,7 +51,7 @@ jobs:
       - name: Get application version
         id: get_version
         run: |
-          VERSION=$(python -c "import docutranslate; print(docutranslate.__version__)")
+          VERSION=$(python -c "import doctranslate; print(doctranslate.__version__)")
           echo "VERSION=$VERSION" >> $GITHUB_ENV
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
@@ -59,30 +59,30 @@ jobs:
       - name: Create macOS app bundle structure
         run: |
           # 创建必要的目录
-          mkdir -p dist/DocuTranslate.app/Contents/MacOS
-          mkdir -p dist/DocuTranslate.app/Contents/Resources
+          mkdir -p dist/doctranslate.app/Contents/MacOS
+          mkdir -p dist/doctranslate.app/Contents/Resources
           
           # 移动可执行文件到 .app 包中
-          mv dist/DocuTranslate-*-mac dist/DocuTranslate.app/Contents/MacOS/DocuTranslate
-          chmod +x dist/DocuTranslate.app/Contents/MacOS/DocuTranslate
+          mv dist/doctranslate-*-mac dist/doctranslate.app/Contents/MacOS/doctranslate
+          chmod +x dist/doctranslate.app/Contents/MacOS/doctranslate
           
           # 复制应用图标
-          cp DocuTranslate.icns dist/DocuTranslate.app/Contents/Resources/
+          cp doctranslate.icns dist/doctranslate.app/Contents/Resources/
           
           # 动态创建 Info.plist 文件，明确指定 x86_64 架构
-          cat > dist/DocuTranslate.app/Contents/Info.plist << EOF
+          cat > dist/doctranslate.app/Contents/Info.plist << EOF
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
           <plist version="1.0">
           <dict>
               <key>CFBundleExecutable</key>
-              <string>DocuTranslate</string>
+              <string>doctranslate</string>
               <key>CFBundleIconFile</key>
-              <string>DocuTranslate.icns</string>
+              <string>doctranslate.icns</string>
               <key>CFBundleIdentifier</key>
-              <string>com.yourcompany.DocuTranslate</string>
+              <string>com.yourcompany.doctranslate</string>
               <key>CFBundleName</key>
-              <string>DocuTranslate</string>
+              <string>doctranslate</string>
               <key>CFBundleVersion</key>
               <string>${{ github.run_number }}</string>
               <key>CFBundleShortVersionString</key>
@@ -101,11 +101,11 @@ jobs:
       # 步骤 10: 将 .app 文件打包成 .dmg 磁盘映像
       - name: Create DMG Disk Image with version
         run: |
-          hdiutil create -volname "DocuTranslate Installer" -srcfolder dist/DocuTranslate.app -ov -format UDZO "dist/DocuTranslate-${{ env.VERSION }}-macOS-x86_64.dmg"
+          hdiutil create -volname "doctranslate Installer" -srcfolder dist/doctranslate.app -ov -format UDZO "dist/doctranslate-${{ env.VERSION }}-macOS-x86_64.dmg"
 
       # 步骤 11: 上传 .dmg 文件作为构建产物
       - name: Upload macOS DMG
         uses: actions/upload-artifact@v4
         with:
-          name: DocuTranslate-macOS-x86_64
-          path: dist/DocuTranslate-${{ env.VERSION }}-macOS-x86_64.dmg
+          name: doctranslate-macOS-x86_64
+          path: dist/doctranslate-${{ env.VERSION }}-macOS-x86_64.dmg

@@ -1,10 +1,10 @@
 # -*- mode: python ; coding: utf-8 -*-
 from PyInstaller.utils.hooks import collect_data_files
-import docutranslate
+import doctranslate
 
 datas = [
-    ('./docutranslate/static', 'docutranslate/static'),
-    ('./docutranslate/template', 'docutranslate/template')
+    ('./doctranslate/static', 'doctranslate/static'),
+    ('./doctranslate/template', 'doctranslate/template')
 ]
 
 # 只收集 pygments 的数据文件
@@ -19,7 +19,7 @@ hiddenimports = [
 ]
 
 a = Analysis(
-    ['docutranslate/app.py'],
+    ['doctranslate/app.py'],
     pathex=[],
     binaries=[],
     datas=datas,
@@ -27,7 +27,7 @@ a = Analysis(
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
-    excludes=["docling","docutranslate.converter.x2md.converter_docling"],
+    excludes=["docling","doctranslate.converter.x2md.converter_docling"],
     noarchive=False,
     target_arch='universal2',
     optimize=0,
@@ -41,7 +41,7 @@ exe = EXE(
     a.binaries,
     a.datas,
     [],
-    name=f'DocuTranslate-{docutranslate.__version__}-mac',
+    name=f'doctranslate-{doctranslate.__version__}-mac',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
@@ -52,5 +52,5 @@ exe = EXE(
     argv_emulation=False,
     codesign_identity=None,
     entitlements_file=None,
-    icon='DocuTranslate.icns',
+    icon='doctranslate.icns',
 )

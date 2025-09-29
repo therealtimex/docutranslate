@@ -7,7 +7,7 @@ wheels/
 *.egg-info
 tests/resource/
 tests/
-docutranslate/output/
+doctranslate/output/
 # Virtual environments
 .venv
 # OS and local env files

@@ -318,8 +318,8 @@ wheels = [
 ]
 
 [[package]]
-name = "docutranslate"
-version = "1.4.6"
+name = "doctranslate"
+version = "1.4.8"
 source = { editable = "." }
 dependencies = [
     { name = "beautifulsoup4" },

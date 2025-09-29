@@ -1,15 +1,15 @@
 <p align="center">
-  <img src="./DocuTranslate.png" alt="项目Logo" style="width: 150px">
+  <img src="./doctranslate.png" alt="项目Logo" style="width: 150px">
 </p>
 
-<h1 align="center">DocuTranslate</h1>
+<h1 align="center">doctranslate</h1>
 
 <p align="center">
-  <a href="https://github.com/therealtimex/docutranslate/stargazers"><img src="https://img.shields.io/github/stars/therealtimex/docutranslate?style=flat-square&logo=github&color=blue" alt="GitHub stars"></a>
-  <a href="https://github.com/therealtimex/docutranslate/releases"><img src="https://img.shields.io/github/downloads/therealtimex/docutranslate/total?logo=github&style=flat-square" alt="GitHub Downloads"></a>
-  <a href="https://pypi.org/project/docutranslate/"><img src="https://img.shields.io/pypi/v/docutranslate?style=flat-square" alt="PyPI version"></a>
+  <a href="https://github.com/therealtimex/doctranslate/stargazers"><img src="https://img.shields.io/github/stars/therealtimex/doctranslate?style=flat-square&logo=github&color=blue" alt="GitHub stars"></a>
+  <a href="https://github.com/therealtimex/doctranslate/releases"><img src="https://img.shields.io/github/downloads/therealtimex/doctranslate/total?logo=github&style=flat-square" alt="GitHub Downloads"></a>
+  <a href="https://pypi.org/project/doctranslate/"><img src="https://img.shields.io/pypi/v/doctranslate?style=flat-square" alt="PyPI version"></a>
   <a href="https://www.python.org/"><img src="https://img.shields.io/badge/Python-3.11+-3776AB?logo=python&logoColor=white&style=flat-square" alt="Python Version"></a>
-  <a href="./LICENSE"><img src="https://img.shields.io/github/license/therealtimex/docutranslate?style=flat-square" alt="License"></a>
+  <a href="./LICENSE"><img src="https://img.shields.io/github/license/therealtimex/doctranslate?style=flat-square" alt="License"></a>
 </p>
 
 <p align="center">
@@ -46,11 +46,11 @@
 
 ## 整合包
 
-对于希望快速上手的用户，我们在 [GitHub Releases](https://github.com/therealtimex/docutranslate/releases) 上提供整合包。您只需下载、解压，并填入您的
+对于希望快速上手的用户，我们在 [GitHub Releases](https://github.com/therealtimex/doctranslate/releases) 上提供整合包。您只需下载、解压，并填入您的
 AI 平台 API-Key 即可开始使用。
 
-- **DocuTranslate**: 标准版，使用在线的 `minerU` 引擎解析PDF文档，如果不需要本地解析pdf选这个版本（推荐）。
-- **DocuTranslate_full**: 完整版，内置 `docling` 本地PDF解析引擎，需要本地解析pdf选这个版本。
+- **doctranslate**: 标准版，使用在线的 `minerU` 引擎解析PDF文档，如果不需要本地解析pdf选这个版本（推荐）。
+- **doctranslate_full**: 完整版，内置 `docling` 本地PDF解析引擎，需要本地解析pdf选这个版本。
 
 ## 安装
 
@@ -58,10 +58,10 @@ AI 平台 API-Key 即可开始使用。
 
 ```bash
 # 基础安装
-pip install docutranslate
+pip install doctranslate
 
 # 如需使用 docling 本地解析PDF
-pip install docutranslate[docling]
+pip install doctranslate[docling]
 ```
 
 ### 使用 uv
@@ -71,19 +71,19 @@ pip install docutranslate[docling]
 uv init
 
 # 基础安装
-uv add docutranslate
+uv add doctranslate
 
 # 安装 docling 扩展
-uv add docutranslate[docling]
+uv add doctranslate[docling]
 ```
 
 ### 使用 git
 
 ```bash
 # 初始化环境
-git clone https://github.com/therealtimex/docutranslate.git
+git clone https://github.com/therealtimex/doctranslate.git
 
-cd docutranslate
+cd doctranslate
 
 uv sync
 
@@ -91,7 +91,7 @@ uv sync
 
 ## 核心概念：工作流 (Workflow)
 
-新版 DocuTranslate 的核心是 **工作流 (Workflow)**。每个工作流都是一个专门为特定类型文件设计的、完整的端到端翻译管道。您不再与一个庞大的类交互，而是根据您的文件类型选择并配置一个合适的工作流。
+新版 doctranslate 的核心是 **工作流 (Workflow)**。每个工作流都是一个专门为特定类型文件设计的、完整的端到端翻译管道。您不再与一个庞大的类交互，而是根据您的文件类型选择并配置一个合适的工作流。
 
 **基本使用流程如下：**
 
@@ -121,20 +121,20 @@ uv sync
 
 ## 启动 Web UI 和 API 服务
 
-为了方便使用，DocuTranslate 提供了一个功能齐全的 Web 界面和 RESTful API。
+为了方便使用，doctranslate 提供了一个功能齐全的 Web 界面和 RESTful API。
 
 **启动服务:**
 
 ```bash
 # 启动服务，默认监听 8010 端口
-docutranslate -i
+doctranslate -i
 
 # 指定端口启动
-docutranslate -i -p 8011
+doctranslate -i -p 8011
 
 # 也可以通过环境变量指定端口
-export DOCUTRANSLATE_PORT=8011
-docutranslate -i
+export doctranslate_PORT=8011
+doctranslate -i
 ```
 
 - **交互式界面**: 启动服务后，请在浏览器中访问 `http://127.0.0.1:8010` (或您指定的端口)。
@@ -148,10 +148,10 @@ docutranslate -i
 
 ```python
 import asyncio
-from docutranslate.workflow.md_based_workflow import MarkdownBasedWorkflow, MarkdownBasedWorkflowConfig
-from docutranslate.converter.x2md.converter_mineru import ConverterMineruConfig
-from docutranslate.translator.ai_translator.md_translator import MDTranslatorConfig
-from docutranslate.exporter.md.md2html_exporter import MD2HTMLExporterConfig
+from doctranslate.workflow.md_based_workflow import MarkdownBasedWorkflow, MarkdownBasedWorkflowConfig
+from doctranslate.converter.x2md.converter_mineru import ConverterMineruConfig
+from doctranslate.translator.ai_translator.md_translator import MDTranslatorConfig
+from doctranslate.exporter.md.md2html_exporter import MD2HTMLExporterConfig
 
 
 async def main():
@@ -215,9 +215,9 @@ if __name__ == "__main__":
 
 ```python
 import asyncio
-from docutranslate.workflow.txt_workflow import TXTWorkflow, TXTWorkflowConfig
-from docutranslate.translator.ai_translator.txt_translator import TXTTranslatorConfig
-from docutranslate.exporter.txt.txt2html_exporter import TXT2HTMLExporterConfig
+from doctranslate.workflow.txt_workflow import TXTWorkflow, TXTWorkflowConfig
+from doctranslate.translator.ai_translator.txt_translator import TXTTranslatorConfig
+from doctranslate.exporter.txt.txt2html_exporter import TXT2HTMLExporterConfig
 
 
 async def main():
@@ -264,9 +264,9 @@ if __name__ == "__main__":
 ```python
 import asyncio
 
-from docutranslate.exporter.js.json2html_exporter import Json2HTMLExporterConfig
-from docutranslate.translator.ai_translator.json_translator import JsonTranslatorConfig
-from docutranslate.workflow.json_workflow import JsonWorkflowConfig, JsonWorkflow
+from doctranslate.exporter.js.json2html_exporter import Json2HTMLExporterConfig
+from doctranslate.translator.ai_translator.json_translator import JsonTranslatorConfig
+from doctranslate.workflow.json_workflow import JsonWorkflowConfig, JsonWorkflow
 
 
 async def main():
@@ -313,9 +313,9 @@ if __name__ == "__main__":
 ```python
 import asyncio
 
-from docutranslate.exporter.docx.docx2html_exporter import Docx2HTMLExporterConfig
-from docutranslate.translator.ai_translator.docx_translator import DocxTranslatorConfig
-from docutranslate.workflow.docx_workflow import DocxWorkflowConfig, DocxWorkflow
+from doctranslate.exporter.docx.docx2html_exporter import Docx2HTMLExporterConfig
+from doctranslate.translator.ai_translator.docx_translator import DocxTranslatorConfig
+from doctranslate.workflow.docx_workflow import DocxWorkflowConfig, DocxWorkflow
 
 
 async def main():
@@ -363,9 +363,9 @@ if __name__ == "__main__":
 ```python
 import asyncio
 
-from docutranslate.exporter.xlsx.xlsx2html_exporter import Xlsx2HTMLExporterConfig
-from docutranslate.translator.ai_translator.xlsx_translator import XlsxTranslatorConfig
-from docutranslate.workflow.xlsx_workflow import XlsxWorkflowConfig, XlsxWorkflow
+from doctranslate.exporter.xlsx.xlsx2html_exporter import Xlsx2HTMLExporterConfig
+from doctranslate.translator.ai_translator.xlsx_translator import XlsxTranslatorConfig
+from doctranslate.workflow.xlsx_workflow import XlsxWorkflowConfig, XlsxWorkflow
 
 
 async def main():
@@ -445,7 +445,7 @@ if __name__ == "__main__":
 
 如果您选择 `docling` 作为文档解析引擎（`convert_engine="docling"`），它会在首次使用时从 Hugging Face 下载所需的模型。
 
-> 更好的选择是在[github releases](https://github.com/therealtimex/docutranslate/releases)下载`docling_artifact.zip`解压到工作目录下。
+> 更好的选择是在[github releases](https://github.com/therealtimex/doctranslate/releases)下载`docling_artifact.zip`解压到工作目录下。
 
 **下载`docling`模型网络问题解决方案:**
 
@@ -465,12 +465,12 @@ os.environ['HF_ENDPOINT'] = 'https://hf-mirror.com'
 
 2. **离线使用 (提前下载模型包)**:
 
-* 从 [GitHub Releases](https://github.com/therealtimex/docutranslate/releases) 下载 `docling_artifact.zip`。
+* 从 [GitHub Releases](https://github.com/therealtimex/doctranslate/releases) 下载 `docling_artifact.zip`。
 * 将其解压到您的项目目录中。
 * 在配置中指定模型路径（若模型不在脚本同级目录里）：
 
 ```python
-from docutranslate.converter.x2md.converter_docling import ConverterDoclingConfig
+from doctranslate.converter.x2md.converter_docling import ConverterDoclingConfig
 
 converter_config = ConverterDoclingConfig(
     artifact="./docling_artifact",  # 指向解压后的文件夹
@@ -484,7 +484,7 @@ converter_config = ConverterDoclingConfig(
 A: 查看一下日志报了什么错，一般是AI平台欠费或网络有问题（查看是否需要开启系统代理）。
 
 **Q: 8010 端口被占用了怎么办？**  
-A: 使用 `-p` 参数指定一个新端口，或设置 `DOCUTRANSLATE_PORT` 环境变量。
+A: 使用 `-p` 参数指定一个新端口，或设置 `doctranslate_PORT` 环境变量。
 
 **Q: 支持PDF扫描件的翻译吗？**  
 A: 支持。请使用 `mineru` 解析引擎，它具备强大的 OCR 能力。
@@ -501,18 +501,18 @@ A: 完全可以。您需要满足以下条件：
 
 **Q: PDF解析缓存机制是如何工作的？**  
 A: `MarkdownBasedWorkflow` 会自动缓存文档解析（文件到Markdown的转换）的结果，以避免重复解析消耗时间和资源。缓存默认保存在内存中，并会记录最近的10次解析。您可以通过
-`DOCUTRANSLATE_CACHE_NUM` 环境变量来修改缓存数量。
+`doctranslate_CACHE_NUM` 环境变量来修改缓存数量。
 
 **Q: 如何让软件可以经过代理**  
 A: 软件默认不使用系统代理，可以在`TranslatorConfig中令system_proxy_enable=True` 启用系统代理
 
 ## Star History
 
-<a href="https://www.star-history.com/#therealtimex/docutranslate&Date">
+<a href="https://www.star-history.com/#therealtimex/doctranslate&Date">
  <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=therealtimex/docutranslate&type=Date&theme=dark" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=therealtimex/docutranslate&type=Date" />
-   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=therealtimex/docutranslate&type=Date" />
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=therealtimex/doctranslate&type=Date&theme=dark" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=therealtimex/doctranslate&type=Date" />
+   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=therealtimex/doctranslate&type=Date" />
  </picture>
 </a>
 

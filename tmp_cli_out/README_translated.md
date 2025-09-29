@@ -1,15 +1,15 @@
 <p align="center">
-  <img src="./DocuTranslate.png" alt="Project Logo" style="width: 150px">
+  <img src="./doctranslate.png" alt="Project Logo" style="width: 150px">
 </p>
 
-<h1 align="center">DocuTranslate</h1>
+<h1 align="center">doctranslate</h1>
 
 <p align="center">
-  <a href="https://github.com/therealtimex/docutranslate/stargazers"><img src="https://img.shields.io/github/stars/therealtimex/docutranslate?style=flat-square&logo=github&color=blue" alt="GitHub stars"></a>
-  <a href="https://github.com/therealtimex/docutranslate/releases"><img src="https://img.shields.io/github/downloads/therealtimex/docutranslate/total?logo=github&style=flat-square" alt="GitHub Downloads"></a>
-  <a href="https://pypi.org/project/docutranslate/"><img src="https://img.shields.io/pypi/v/docutranslate?style=flat-square" alt="PyPI version"></a>
+  <a href="https://github.com/therealtimex/doctranslate/stargazers"><img src="https://img.shields.io/github/stars/therealtimex/doctranslate?style=flat-square&logo=github&color=blue" alt="GitHub stars"></a>
+  <a href="https://github.com/therealtimex/doctranslate/releases"><img src="https://img.shields.io/github/downloads/therealtimex/doctranslate/total?logo=github&style=flat-square" alt="GitHub Downloads"></a>
+  <a href="https://pypi.org/project/doctranslate/"><img src="https://img.shields.io/pypi/v/doctranslate?style=flat-square" alt="PyPI version"></a>
   <a href="https://www.python.org/"><img src="https://img.shields.io/badge/Python-3.11+-3776AB?logo=python&logoColor=white&style=flat-square" alt="Python Version"></a>
-  <a href="./LICENSE"><img src="https://img.shields.io/github/license/therealtimex/docutranslate?style=flat-square" alt="License"></a>
+  <a href="./LICENSE"><img src="https://img.shields.io/github/license/therealtimex/doctranslate?style=flat-square" alt="License"></a>
 </p>
 
 <p align="center">
@@ -54,12 +54,12 @@
 ## All-in-One Packages
 
 For users who want to get started quickly, we provide all-in-one packages
-on [GitHub Releases](https://github.com/therealtimex/docutranslate/releases). Simply download, unzip, and enter your AI
+on [GitHub Releases](https://github.com/therealtimex/doctranslate/releases). Simply download, unzip, and enter your AI
 platform API-Key to start using.
 
-- **DocuTranslate**: Standard version, uses the online `minerU` engine to parse PDF documents. Choose this version if
+- **doctranslate**: Standard version, uses the online `minerU` engine to parse PDF documents. Choose this version if
   you don't need local PDF parsing (recommended).
-- **DocuTranslate_full**: Full version, includes the built-in `docling` local PDF parsing engine. Choose this version if
+- **doctranslate_full**: Full version, includes the built-in `docling` local PDF parsing engine. Choose this version if
   you need local PDF parsing.
 
 ## Installation
@@ -68,15 +68,15 @@ platform API-Key to start using.
 
 ```bash
 # CLI only (no GUI deps)
-pip install docutranslate
+pip install doctranslate
 
 # GUI/Web UI support
-pip install "docutranslate[webui]"
+pip install "doctranslate[webui]"
 
 # Add docling for local PDF parsing (optional)
-pip install "docutranslate[docling]"
+pip install "doctranslate[docling]"
 # With both GUI and docling
-pip install "docutranslate[webui,docling]"
+pip install "doctranslate[webui,docling]"
 ```
 
 ### Using uv
@@ -86,29 +86,29 @@ pip install "docutranslate[webui,docling]"
 uv init
 
 # CLI only
-uv add docutranslate
+uv add doctranslate
 
 # GUI support
-uv add "docutranslate[webui]"
+uv add "doctranslate[webui]"
 
 # docling extension
-uv add "docutranslate[docling]"
+uv add "doctranslate[docling]"
 ```
 
 ### Using git
 
 ```bash
 # Initialize environment
-git clone https://github.com/therealtimex/docutranslate.git
+git clone https://github.com/therealtimex/doctranslate.git
 
-cd docutranslate
+cd doctranslate
 
 uv sync
 ```
 
 ## Core Concept: Workflow
 
-The core of the new DocuTranslate is the **Workflow**. Each workflow is a complete, end-to-end translation pipeline
+The core of the new doctranslate is the **Workflow**. Each workflow is a complete, end-to-end translation pipeline
 designed specifically for a particular file type. You no longer interact with a monolithic class; instead, you select
 and configure a suitable workflow based on your file type.
 
@@ -143,22 +143,22 @@ and configure a suitable workflow based on your file type.
 
 ## Starting the Web UI and API Service
 
-For ease of use, DocuTranslate provides a full-featured Web interface and RESTful API.
+For ease of use, doctranslate provides a full-featured Web interface and RESTful API.
 
 **Starting the Service:**
 
 ```bash
-# Install GUI support first: pip install "docutranslate[webui]"
+# Install GUI support first: pip install "doctranslate[webui]"
 
 # Start the service, listening on port 8010 by default
-docutranslate gui
+doctranslate gui
 
 # Start on a specific port
-docutranslate gui -p 8011
+doctranslate gui -p 8011
 
 # You can also specify the port via an environment variable
-export DOCUTRANSLATE_PORT=8011
-docutranslate -i
+export doctranslate_PORT=8011
+doctranslate -i
 ```
 
 - **Interactive Interface**: After starting the service, please visit `http://127.0.0.1:8010` (or your specified port)
@@ -167,7 +167,7 @@ docutranslate -i
 
 ## CLI
 
-DocuTranslate now ships with a first-class CLI. It auto-detects workflow type from the input file extension and exports suitable outputs.
+doctranslate now ships with a first-class CLI. It auto-detects workflow type from the input file extension and exports suitable outputs.
 
 - Env fallbacks: `OPENAI_BASE_URL`, `OPENAI_API_KEY`, `OPENAI_MODEL`, `MINERU_TOKEN`.
 
@@ -175,33 +175,33 @@ Basic examples
 
 ```bash
 # Show version
-docutranslate version
+doctranslate version
 
 # Start GUI (requires webui extra)
-docutranslate gui -p 8011
+doctranslate gui -p 8011
 
 # Translate a DOCX (exports .docx and .html)
-docutranslate translate ./paper.docx \
+doctranslate translate ./paper.docx \
   --base-url https://api.openai.com/v1 \
   --api-key $OPENAI_API_KEY \
   --model-id gpt-4o \
   --to-lang 中文
 
 # Translate a TXT (exports .txt and .html)
-docutranslate translate ./notes.txt --to-lang English
+doctranslate translate ./notes.txt --to-lang English
 
 # Translate a JSON (exports .json and .html). Default path is $..*
-docutranslate translate ./data.json --json-path '$.items[*].name' --json-path '$.items[*].desc'
+doctranslate translate ./data.json --json-path '$.items[*].name' --json-path '$.items[*].desc'
 
 # Translate an XLSX (exports .xlsx, .csv, .html). Select regions if needed
-docutranslate translate ./sheet.xlsx --xlsx-regions Sheet1!A1:C20 C:D
+doctranslate translate ./sheet.xlsx --xlsx-regions Sheet1!A1:C20 C:D
 
 # Translate a PDF via minerU (exports .md, .zip, .html)
 export MINERU_TOKEN=your_mineru_token
-docutranslate translate ./paper.pdf --to-lang 中文
+doctranslate translate ./paper.pdf --to-lang 中文
 
 # Force a specific workflow and formats
-docutranslate translate ./index.html --workflow html --formats html
+doctranslate translate ./index.html --workflow html --formats html
 ```
 
 Key flags
@@ -220,10 +220,10 @@ for translation. Here is an example using the asynchronous approach.
 
 ```python
 import asyncio
-from docutranslate.workflow.md_based_workflow import MarkdownBasedWorkflow, MarkdownBasedWorkflowConfig
-from docutranslate.converter.x2md.converter_mineru import ConverterMineruConfig
-from docutranslate.translator.ai_translator.md_translator import MDTranslatorConfig
-from docutranslate.exporter.md.md2html_exporter import MD2HTMLExporterConfig
+from doctranslate.workflow.md_based_workflow import MarkdownBasedWorkflow, MarkdownBasedWorkflowConfig
+from doctranslate.converter.x2md.converter_mineru import ConverterMineruConfig
+from doctranslate.translator.ai_translator.md_translator import MDTranslatorConfig
+from doctranslate.exporter.md.md2html_exporter import MD2HTMLExporterConfig
 
 
 async def main():
@@ -287,9 +287,9 @@ example using the asynchronous approach.
 
 ```python
 import asyncio
-from docutranslate.workflow.txt_workflow import TXTWorkflow, TXTWorkflowConfig
-from docutranslate.translator.ai_translator.txt_translator import TXTTranslatorConfig
-from docutranslate.exporter.txt.txt2html_exporter import TXT2HTMLExporterConfig
+from doctranslate.workflow.txt_workflow import TXTWorkflow, TXTWorkflowConfig
+from doctranslate.translator.ai_translator.txt_translator import TXTTranslatorConfig
+from doctranslate.exporter.txt.txt2html_exporter import TXT2HTMLExporterConfig
 
 
 async def main():
@@ -337,9 +337,9 @@ translated.
 ```python
 import asyncio
 
-from docutranslate.exporter.js.json2html_exporter import Json2HTMLExporterConfig
-from docutranslate.translator.ai_translator.json_translator import JsonTranslatorConfig
-from docutranslate.workflow.json_workflow import JsonWorkflowConfig, JsonWorkflow
+from doctranslate.exporter.js.json2html_exporter import Json2HTMLExporterConfig
+from doctranslate.translator.ai_translator.json_translator import JsonTranslatorConfig
+from doctranslate.workflow.json_workflow import JsonWorkflowConfig, JsonWorkflow
 
 
 async def main():
@@ -386,9 +386,9 @@ Here is an example using the asynchronous approach.
 ```python
 import asyncio
 
-from docutranslate.exporter.docx.docx2html_exporter import Docx2HTMLExporterConfig
-from docutranslate.translator.ai_translator.docx_translator import DocxTranslatorConfig
-from docutranslate.workflow.docx_workflow import DocxWorkflowConfig, DocxWorkflow
+from doctranslate.exporter.docx.docx2html_exporter import Docx2HTMLExporterConfig
+from doctranslate.translator.ai_translator.docx_translator import DocxTranslatorConfig
+from doctranslate.workflow.docx_workflow import DocxWorkflowConfig, DocxWorkflow
 
 
 async def main():
@@ -436,9 +436,9 @@ Here is an example using the asynchronous approach.
 ```python
 import asyncio
 
-from docutranslate.exporter.xlsx.xlsx2html_exporter import Xlsx2HTMLExporterConfig
-from docutranslate.translator.ai_translator.xlsx_translator import XlsxTranslatorConfig
-from docutranslate.workflow.xlsx_workflow import XlsxWorkflowConfig, XlsxWorkflow
+from doctranslate.exporter.xlsx.xlsx2html_exporter import Xlsx2HTMLExporterConfig
+from doctranslate.translator.ai_translator.xlsx_translator import XlsxTranslatorConfig
+from doctranslate.workflow.xlsx_workflow import XlsxWorkflowConfig, XlsxWorkflow
 
 
 async def main():
@@ -521,7 +521,7 @@ If you choose `docling` as the document parsing engine (`convert_engine="docling
 models from Hugging Face on first use.
 
 > A better option is to download `docling_artifact.zip`
-> from [GitHub releases](https://github.com/therealtimex/docutranslate/releases) and unzip it to your working directory.
+> from [GitHub releases](https://github.com/therealtimex/doctranslate/releases) and unzip it to your working directory.
 
 **Solution for network issues when downloading `docling` models:**
 
@@ -542,12 +542,12 @@ os.environ['HF_ENDPOINT'] = 'https://hf-mirror.com'
 
 2. **Offline use (download the model package in advance)**:
 
-* Download `docling_artifact.zip` from [GitHub Releases](https://github.com/therealtimex/docutranslate/releases).
+* Download `docling_artifact.zip` from [GitHub Releases](https://github.com/therealtimex/doctranslate/releases).
 * Unzip it to your project directory.
 * Specify the model path in the configuration (if the model is not in the same directory as the script):
 
 ```python
-from docutranslate.converter.x2md.converter_docling import ConverterDoclingConfig
+from doctranslate.converter.x2md.converter_docling import ConverterDoclingConfig
 
 converter_config = ConverterDoclingConfig(
     artifact="./docling_artifact",  # Point to the unzipped folder
@@ -559,7 +559,7 @@ converter_config = ConverterDoclingConfig(
 ## FAQ
 
 **Q: What if port 8010 is occupied?**
-A: Use the `-p` parameter to specify a new port, or set the `DOCUTRANSLATE_PORT` environment variable.
+A: Use the `-p` parameter to specify a new port, or set the `doctranslate_PORT` environment variable.
 
 **Q: Does it support translation of scanned PDFs?**
 A: Yes. Please use the `mineru` parsing engine, which has powerful OCR capabilities.
@@ -579,19 +579,19 @@ A: It is entirely possible. You need to meet the following conditions:
 **Q: How does the PDF parsing cache mechanism work?**
 A: `MarkdownBasedWorkflow` automatically caches the results of document parsing (file to Markdown conversion) to avoid
 repeated parsing that consumes time and resources. The cache is stored in memory by default and records the last 10
-parses. You can modify the cache size using the `DOCUTRANSLATE_CACHE_NUM` environment variable.
+parses. You can modify the cache size using the `doctranslate_CACHE_NUM` environment variable.
 
 **Q: How to make the software go through a proxy?**
 A: The software does not use a proxy by default. You can enable it by setting the environment variable
-`DOCUTRANSLATE_PROXY_ENABLED` to `true`.
+`doctranslate_PROXY_ENABLED` to `true`.
 
 ## Star History
 
-<a href="https://www.star-history.com/#therealtimex/docutranslate&Date">
+<a href="https://www.star-history.com/#therealtimex/doctranslate&Date">
  <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=therealtimex/docutranslate&type=Date&theme=dark" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=therealtimex/docutranslate&type=Date" />
-   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=therealtimex/docutranslate&type=Date" />
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=therealtimex/doctranslate&type=Date&theme=dark" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=therealtimex/doctranslate&type=Date" />
+   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=therealtimex/doctranslate&type=Date" />
  </picture>
 </a>
 

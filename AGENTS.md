@@ -1,11 +1,11 @@
 # Repository Guidelines
 
 ## Project Structure & Module Organization
-- Code lives under `docutranslate/`:
+- Code lives under `doctranslate/`:
   - `workflow/` (pipelines for each format), `translator/` (LLM adapters), `converter/` (PDF/Doc → Markdown), `exporter/` (HTML/MD/DOCX/XLSX/… outputs), `agents/`, `utils/`, `static/`, `template/`.
-  - Entrypoints: `docutranslate/cli.py` (CLI) and `docutranslate/app.py` (Web UI).
+  - Entrypoints: `doctranslate/cli.py` (CLI) and `doctranslate/app.py` (Web UI).
 - Supporting folders: `examples/` (sample inputs), `docs/` and `images/` (docs/assets).
-- Build config: `pyproject.toml` (Python 3.11+, `docutranslate` console script).
+- Build config: `pyproject.toml` (Python 3.11+, `doctranslate` console script).
 
 ## Build, Test, and Development Commands
 - Environment (recommended):
@@ -13,12 +13,12 @@
   - `uv sync --group dev-light` (fast) or `uv sync --group dev` (includes docling and heavy deps)
 - Build/install locally:
   - `uv build`
-  - `uv pip install dist/docutranslate-*.whl`
+  - `uv pip install dist/doctranslate-*.whl`
 - Run CLI:
-  - `docutranslate -h` | `docutranslate version`
-  - `docutranslate translate examples/2206.01062v1.md --skip-translate --formats markdown --out-dir output`
+  - `doctranslate -h` | `doctranslate version`
+  - `doctranslate translate examples/2206.01062v1.md --skip-translate --formats markdown --out-dir output`
 - Run Web UI/API:
-  - `pip install "docutranslate[webui]" && docutranslate gui -p 8010`
+  - `pip install "doctranslate[webui]" && doctranslate gui -p 8010`
 
 ## Coding Style & Naming Conventions
 - Python 3.11+, PEP 8, 4-space indent. Use type hints and `pathlib.Path` for I/O.
@@ -37,12 +37,12 @@
 
 ## Security & Configuration Tips
 - Never commit secrets. Configure via env vars (auto-loaded from `.env` if present):
-  - `OPENAI_BASE_URL`, `OPENAI_API_KEY`, `OPENAI_MODEL`, `MINERU_TOKEN`, `DOCUTRANSLATE_PORT`.
+  - `OPENAI_BASE_URL`, `OPENAI_API_KEY`, `OPENAI_MODEL`, `MINERU_TOKEN`, `DOCTRANSLATE_PORT`.
 - Example file: `.env.example` → copy to `.env` and fill values.
-- Disable auto-loading with `--no-env` or set a custom path via `--env-file` or `DOCUTRANSLATE_ENV_FILE`.
+- Disable auto-loading with `--no-env` or set a custom path via `--env-file` or `DOCTRANSLATE_ENV_FILE`.
 - Prefer `--group dev-light` for quick iteration; use `--group dev` only when validating docling paths.
 
 ## Agent-Specific Notes
-- Language: default English; switch with `--lang en|zh` or `DOCUTRANSLATE_LANG`.
+- Language: default English; switch with `--lang en|zh` or `DOCTRANSLATE_LANG`.
 - Orchestration: use `--emit-manifest` and `--progress jsonl` for machine-readable outputs.
 - Upstream conversion: if using an external converter (e.g., docling CLI), pass its output directory with `--docpkg`.

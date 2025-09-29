@@ -47,5 +47,5 @@ jobs:
       - name: Upload Windows executable
         uses: actions/upload-artifact@v4
         with:
-          name: DocuTranslate-Windows
+          name: doctranslate-Windows
           path: dist/*.exe

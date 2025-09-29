@@ -1,5 +1,5 @@
 [project]
-name = "docutranslate"
+name = "doctranslate"
 description = "文件翻译工具"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -29,19 +29,19 @@ webui = ["fastapi[standard]>=0.115.12", "uvicorn>=0.30.0"]
 dev = ["opencv-python>=4.11.0.86", "docling>=2.40.0", "hf-xet>=1.1.10"]
 dev-light = []
 [project.scripts]
-docutranslate = "docutranslate.cli:main"
+doctranslate = "doctranslate.cli:main"
 
 [build-system]
 requires = ["setuptools>=80.9.0"]       # 或者你需要的 setuptools 版本
 build-backend = "setuptools.build_meta"
 backend-path = ["."]
 [tool.setuptools]
-#packages = ["docutranslate"]
+#packages = ["doctranslate"]
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["docutranslate*"]
+include = ["doctranslate*"]
 [tool.setuptools.package-data]
-docutranslate = ["static/**", "template/**"]
+doctranslate = ["static/**", "template/**"]
 
 [tool.setuptools.dynamic]
-version = { attr = "docutranslate.__version__" }
+version = { attr = "doctranslate.__version__" }

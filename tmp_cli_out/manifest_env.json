@@ -1,7 +1,7 @@
 {
   "version": "1.4.6",
   "input": {
-    "path": "/Users/ledangtrung/GitHub/docutranslate/examples/2206.01062v1.md",
+    "path": "/Users/ledangtrung/GitHub/doctranslate/examples/2206.01062v1.md",
     "suffix": ".md",
     "size": 1632536,
     "docpkg_root": null
@@ -21,7 +21,7 @@
   "outputs": [
     {
       "type": "markdown",
-      "path": "/Users/ledangtrung/GitHub/docutranslate/tmp_cli_out/2206.01062v1_translated.md",
+      "path": "/Users/ledangtrung/GitHub/doctranslate/tmp_cli_out/2206.01062v1_translated.md",
       "is_text": true
     }
   ],

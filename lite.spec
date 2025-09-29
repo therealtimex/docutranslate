@@ -1,11 +1,11 @@
 # -*- mode: python ; coding: utf-8 -*-
 import os
 from PyInstaller.utils.hooks import collect_data_files
-import docutranslate
+import doctranslate
 
 datas = [
-    ('docutranslate/static', 'docutranslate/static'),
-    ('docutranslate/template', 'docutranslate/template'),
+    ('doctranslate/static', 'doctranslate/static'),
+    ('doctranslate/template', 'doctranslate/template'),
     *collect_data_files('pygments')  # 直接展开
 ]
 
@@ -18,7 +18,7 @@ hiddenimports = [
 ]
 
 a = Analysis(
-    ['docutranslate/app.py'],  # 使用正斜杠，Windows 也支持
+    ['doctranslate/app.py'],  # 使用正斜杠，Windows 也支持
     pathex=[],
     binaries=[],
     datas=datas,
@@ -26,7 +26,7 @@ a = Analysis(
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
-    excludes=["docling", "docutranslate.converter.x2md.converter_docling"],
+    excludes=["docling", "doctranslate.converter.x2md.converter_docling"],
     noarchive=False,
     optimize=0,
 )
@@ -39,7 +39,7 @@ exe = EXE(
     a.binaries,
     a.datas,
     [],
-    name=f'DocuTranslate-{docutranslate.__version__}-win',
+    name=f'doctranslate-{doctranslate.__version__}-win',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
@@ -51,5 +51,5 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon='DocuTranslate.ico',  # 修正为字符串
+    icon='doctranslate.ico',  # 修正为字符串
 )

@@ -1,7 +1,7 @@
 # -*- mode: python ; coding: utf-8 -*-
 import os
 from PyInstaller.utils.hooks import collect_all
-import docutranslate
+import doctranslate
 
 # 初始化列表
 datas = []
@@ -22,8 +22,8 @@ for package in ['easyocr', 'docling', 'pygments']:
 # 然后添加您的自定义资源（避免重复）
 custom_datas = [
     ('./.venv/Lib/site-packages/docling_parse/pdf_resources_v2', 'docling_parse/pdf_resources_v2'),
-    ('./docutranslate/static', 'docutranslate/static'),
-    ('./docutranslate/template', 'docutranslate/template')
+    ('./doctranslate/static', 'doctranslate/static'),
+    ('./doctranslate/template', 'doctranslate/template')
 ]
 
 # 避免添加重复的数据
@@ -32,7 +32,7 @@ for data in custom_datas:
         datas.append(data)
 
 a = Analysis(
-    ['docutranslate/app.py'],  # 使用正斜杠
+    ['doctranslate/app.py'],  # 使用正斜杠
     pathex=[],  # 添加当前工作目录到 pathex
     binaries=binaries,
     datas=datas,
@@ -52,7 +52,7 @@ exe = EXE(
     a.binaries,
     a.datas,
     [],
-    name=f'DocuTranslate_full-{docutranslate.__version__}-win',
+    name=f'doctranslate_full-{doctranslate.__version__}-win',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
@@ -65,5 +65,5 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon='DocuTranslate.ico',
+    icon='doctranslate.ico',
 )

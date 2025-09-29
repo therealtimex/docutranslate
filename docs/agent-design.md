@@ -1,4 +1,3 @@
-
 # Agent Design
 
 ## Goals
@@ -13,17 +12,17 @@
   - Node A (optional): Docling Convert
       - Input: PDF (and similar)
       - Output: Markdown + assets (directory or zip), plus a small manifest.
-  - Node B: DocuTranslate Agent (this repo)
+  - Node B: doctranslate Agent (this repo)
       - Input: file or pre-converted Markdown (from Node A).
       - Action: translate (LLM optional), export results, emit artifacts + metrics.
   - Node C (optional): Post-process or publish
       - E.g., storage, viewers, delivery.
 
-  DocuTranslate should not import Docling/MinerU packages in its base. Those become upstream responsibilities or optional extras.
+  doctranslate should not import Docling/MinerU packages in its base. Those become upstream responsibilities or optional extras.
 
 ## Agent Boundaries
 
-  - Keep DocuTranslate as:
+  - Keep doctranslate as:
       - Core library: translators, IR, exporters, minimal dependencies.
       - CLI Agent: a thin wrapper exposing a stable contract to realtimex.ai.
       - Optional extras (install when needed): docling/mineru converters, webui.
@@ -56,7 +55,7 @@
           - full.md (or configurable)
           - assets/…
           - optional manifest.json (source info)
-  - DocuTranslate Agent consumes:
+  - doctranslate Agent consumes:
       - --workflow markdown_based --convert-engine identity
       - --input docling_out/full.md
       - Optionally --save-attachments to capture docling_raw.md (already supported by our attachments system).
@@ -66,7 +65,7 @@
 ## CLI Additions (small refinements)
 
   - Add an “agent mode”:
-      - docutranslate agent --stdio (JSON-RPC over stdio) or --input-json <path> for batch mode.
+      - doctranslate agent --stdio (JSON-RPC over stdio) or --input-json <path> for batch mode.
       - Same capabilities as translate, but I/O is JSON-first.
   - Add an explicit “docling input” convenience:
       - --docling-out <dir_or_zip> as sugar for --workflow markdown_based --convert-engine identity --input <md>. The agent scans the docling output for the main md.
@@ -109,6 +108,6 @@
 
 ## Why this works well
 
-  - Keeps DocuTranslate agent shippable, fast to install, and independent of heavy CV/ML stacks.
+  - Keeps doctranslate agent shippable, fast to install, and independent of heavy CV/ML stacks.
   - Lets realtimex.ai compose Docling (or any other converter) upstream.
   - Provides a stable, automation-friendly contract with clear artifacts and metrics.
