@@ -33,8 +33,6 @@
 
 > When translating `pdf` files, they are first converted to Markdown, which will **cause the original layout to be lost**. Users with strict layout requirements should take note.
 
-> QQ Discussion Group: 1047781902
-
 **UI Interface**:
 ![Translation Effect](/images/UI界面.png)
 

@@ -33,8 +33,6 @@
 
 > 在翻译`pdf`时会先转换为markdown，这会**丢失**原先的排版，对排版有要求的用户请注意
 
-> QQ交流群：1047781902
-
 **UI界面**：
 ![翻译效果](/images/UI界面.png)
 
@@ -519,7 +517,3 @@ A: 软件默认不使用系统代理，可以在`TranslatorConfig中令system_pr
 ## 赞赏支持
 
 欢迎支持作者，烦请在备注中说明一下赞赏原因哟
-
-<p align="center">
-  <img src="./images/赞赏码.jpg" alt="赞赏码" style="width: 250px;">
-</p>
