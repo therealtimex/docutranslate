@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2025 QinHan
+# SPDX-FileCopyrightText: 2025 RealTimeX
 # SPDX-License-Identifier: MPL-2.0
 import json
 from dataclasses import dataclass
@@ -41,7 +41,7 @@ class JsonTranslator(AiTranslator):
         self.json_paths = config.json_paths
 
     def _get_key_or_index_from_path(self, path) -> Any:
-        """从jsonpath_ng的Path对象中提取键或索引。"""
+        """Extract key or index from jsonpath_ng Path object."""
         if hasattr(path, 'fields') and path.fields:
             return path.fields[0]
         if hasattr(path, 'index'):
@@ -50,79 +50,79 @@ class JsonTranslator(AiTranslator):
 
     def _collect_strings_for_translation(self, content: dict) -> Tuple[List[str], List[Tuple[Any, Any]]]:
         """
-        根据jsonpath查找匹配项，并递归地从中收集所有字符串以进行翻译。
-        为了防止重复，会跟踪每个字符串的精确位置。
+        Find matches based on jsonpath and recursively collect all strings from them for translation.
+        To prevent duplicates, track the exact position of each string.
 
-        返回:
-            - original_texts: 一个包含所有待翻译字符串的列表。
-            - update_targets: 一个包含更新信息的目标列表，每个元素为 (container, key_or_index)。
+        Returns:
+            - original_texts: A list containing all strings to be translated.
+            - update_targets: A list containing target information for updates, each element is (container, key_or_index).
         """
         original_texts = []
         update_targets = []
-        # 使用 (id(container), key_or_index) 来唯一标识一个位置，防止重复添加
+        # Use (id(container), key_or_index) to uniquely identify a position, preventing duplicate additions
         seen_targets = set()
 
-        # 辅助递归函数，用于遍历json对象
+        # Helper recursive function for traversing json objects
         def _traverse(node: Any, container: Any, key_or_index: Any):
-            # 如果当前节点是字符串，并且其位置尚未被记录
+            # If current node is a string and its position hasn't been recorded yet
             target_id = (id(container), key_or_index)
             if isinstance(node, str):
                 if target_id not in seen_targets:
                     original_texts.append(node)
                     update_targets.append((container, key_or_index))
                     seen_targets.add(target_id)
-            # 如果是字典，则遍历其所有子节点
+            # If it's a dictionary, traverse all its child nodes
             elif isinstance(node, dict):
                 for k, v in node.items():
                     _traverse(v, node, k)
-            # 如果是列表，则遍历其所有子节点
+            # If it's a list, traverse all its child nodes
             elif isinstance(node, list):
                 for i, item in enumerate(node):
                     _traverse(item, node, i)
 
-        # 1. 查找所有顶层匹配项
+        # 1. Find all top-level matches
         all_matches = []
         for path_str in self.json_paths:
             jsonpath_expr = parse(path_str)
             all_matches.extend(jsonpath_expr.find(content))
 
-        # 2. 遍历匹配项并启动递归收集
+        # 2. Traverse matches and start recursive collection
         for match in all_matches:
             parent = match.context.value if match.context else None
             key_or_index = self._get_key_or_index_from_path(match.path)
 
-            # 直接在匹配到的值上启动遍历
+            # Start traversal directly on the matched value
             _traverse(match.value, parent, key_or_index)
 
         return original_texts, update_targets
 
     def _apply_translations(self, update_targets: List[Tuple[Any, Any]], translated_texts: List[str]):
         """
-        使用翻译后的文本更新原始JSON内容。
+        Update original JSON content with translated text.
         """
         if len(update_targets) != len(translated_texts):
             raise ValueError("The number of translation targets does not match the number of translated texts.")
 
         for target, text in zip(update_targets, translated_texts):
             container, key_or_index = target
-            # 确保容器和键/索引是有效的，然后执行更新
+            # Ensure container and key/index are valid, then perform update
             if container is not None and key_or_index is not None:
                 container[key_or_index] = text
 
     def translate(self, document: Document) -> Self:
         """
-        主方法：提取、翻译并更新JSON文档中的指定内容。
+        Main method: Extract, translate and update specified content in JSON document.
 
-        流程:
-        1. 解析输入的JSON文档。
-        2. 根据jsonpath找到匹配对象，并递归遍历它们以提取所有字符串。
-        3. 批量发送提取的字符串进行翻译。
-        4. 将翻译回来的文本根据其原始位置，更新回JSON对象中。
-        5. 将更新后的 content 写回 document。
+        Process:
+        1. Parse input JSON document.
+        2. Find matching objects based on jsonpath and recursively traverse them to extract all strings.
+        3. Send extracted strings for batch translation.
+        4. Update translated text back to JSON object according to their original positions.
+        5. Write updated content back to document.
         """
         content = json.loads(document.content.decode())
 
-        # 步骤 1: 提取所有需要翻译的字符串及其位置
+        # Step 1: Extract all strings that need translation and their positions
         original_texts, update_targets = self._collect_strings_for_translation(content)
 
         if not original_texts:
@@ -133,16 +133,16 @@ class JsonTranslator(AiTranslator):
             if self.translate_agent:
                 self.translate_agent.update_glossary_dict(self.glossary_dict_gen)
 
-        # 步骤 2: 批量翻译提取出的文本
+        # Step 2: Batch translate extracted text
         if self.translate_agent:
             translated_texts = self.translate_agent.send_segments(original_texts, self.chunk_size)
         else:
             translated_texts = original_texts
 
         if len(original_texts) != len(translated_texts):
-            raise ValueError("翻译服务返回的项目数量与发送的数量不匹配。")
+            raise ValueError("The number of items returned by translation service does not match the number sent.")
 
-        # 步骤 3: 将翻译结果写回原始JSON对象
+        # Step 3: Write translation results back to original JSON object
         self._apply_translations(update_targets, translated_texts)
 
         document.content = json.dumps(content, ensure_ascii=False, indent=2).encode('utf-8')
@@ -152,7 +152,7 @@ class JsonTranslator(AiTranslator):
     async def translate_async(self, document: Document) -> Self:
         content = json.loads(document.content.decode())
 
-        # 步骤 1: 提取所有需要翻译的字符串及其位置
+        # Step 1: Extract all strings that need translation and their positions
         original_texts, update_targets = self._collect_strings_for_translation(content)
 
         if not original_texts:
@@ -163,16 +163,16 @@ class JsonTranslator(AiTranslator):
             if self.translate_agent:
                 self.translate_agent.update_glossary_dict(self.glossary_dict_gen)
 
-        # 步骤 2: 批量翻译提取出的文本
+        # Step 2: Batch translate extracted text
         if self.translate_agent:
             translated_texts = await self.translate_agent.send_segments_async(original_texts, self.chunk_size)
         else:
             translated_texts = original_texts
 
         if len(original_texts) != len(translated_texts):
-            raise ValueError("翻译服务返回的项目数量与发送的数量不匹配。")
+            raise ValueError("The number of items returned by translation service does not match the number sent.")
 
-        # 步骤 3: 将翻译结果写回原始JSON对象
+        # Step 3: Write translation results back to original JSON object
         self._apply_translations(update_targets, translated_texts)
 
         document.content = json.dumps(content, ensure_ascii=False, indent=2).encode('utf-8')

@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2025 QinHan
+# SPDX-FileCopyrightText: 2025 RealTimeX
 # SPDX-License-Identifier: MPL-2.0
 import asyncio
 from dataclasses import dataclass
@@ -12,18 +12,18 @@ from doctranslate.translator.ai_translator.base import AiTranslatorConfig, AiTra
 @dataclass
 class TXTTranslatorConfig(AiTranslatorConfig):
     """
-    TXTTranslator的配置类。
+    Configuration class for TXTTranslator.
 
     Attributes:
         insert_mode (Literal["replace", "append", "prepend"]):
-            指定如何插入翻译文本的模式。
-            - "replace": 用译文替换原文。
-            - "append": 将译文追加到原文后面。
-            - "prepend": 将译文前置到原文前面。
-            默认为 "replace"。
+            Specifies the mode for inserting translated text.
+            - "replace": Replace original text with translated text.
+            - "append": Append translated text after original text.
+            - "prepend": Prepend translated text before original text.
+            Default is "replace".
         separator (str):
-            在 "append" 或 "prepend" 模式下，用于分隔原文和译文的字符串。
-            默认为换行符 "\n"。
+            String used to separate original and translated text in "append" or "prepend" modes.
+            Default is newline character "\n".
     """
     insert_mode: Literal["replace", "append", "prepend"] = "replace"
     separator: str = "\n"
@@ -31,16 +31,16 @@ class TXTTranslatorConfig(AiTranslatorConfig):
 
 class TXTTranslator(AiTranslator):
     """
-    一个用于翻译纯文本 (.txt) 文件的翻译器。
-    它会按行读取文件内容，对每一行进行翻译，然后根据配置将译文写回。
+    A translator for plain text (.txt) files.
+    It reads file content line by line, translates each line, and writes back the translated text according to configuration.
     """
 
     def __init__(self, config: TXTTranslatorConfig):
         """
-        初始化 TXTTranslator。
+        Initialize TXTTranslator.
 
         Args:
-            config (TxtTranslatorConfig): 翻译器的配置。
+            config (TxtTranslatorConfig): Configuration for the translator.
         """
         super().__init__(config=config)
         self.chunk_size = config.chunk_size
@@ -67,139 +67,139 @@ class TXTTranslator(AiTranslator):
 
     def _pre_translate(self, document: Document) -> List[str]:
         """
-        预处理步骤：解析TXT文件，按行分割文本。
+        Preprocessing step: Parse TXT file and split text by lines.
 
         Args:
-            document (Document): 待处理的文档对象。
+            document (Document): Document object to be processed.
 
         Returns:
-            List[str]: 待翻译的原文文本行列表。
+            List[str]: List of original text lines to be translated.
         """
         try:
-            # 使用 utf-8-sig 解码以处理可能存在的BOM (Byte Order Mark)
+            # Use utf-8-sig decoding to handle possible BOM (Byte Order Mark)
             txt_content = document.content.decode('utf-8-sig')
         except (UnicodeDecodeError, AttributeError) as e:
-            self.logger.error(f"无法解码TXT文件内容，请确保文件编码为UTF-8: {e}")
+            self.logger.error(f"Unable to decode TXT file content, please ensure file encoding is UTF-8: {e}")
             return []
 
-        # 按行分割文本，并保留空行，因为它们可能是格式的一部分
+        # Split text by lines and preserve empty lines as they may be part of formatting
         original_texts = txt_content.splitlines()
 
         return original_texts
 
     def _after_translate(self, translated_texts: List[str], original_texts: List[str]) -> bytes:
         """
-        翻译后处理步骤：将译文根据配置模式与原文合并，并生成新的TXT文件内容。
+        Post-translation step: Merge translated text with original text according to configuration mode and generate new TXT file content.
 
         Args:
-            translated_texts (List[str]): 翻译后的文本行列表。
-            original_texts (List[str]): 原始文本行列表。
+            translated_texts (List[str]): List of translated text lines.
+            original_texts (List[str]): List of original text lines.
 
         Returns:
-            bytes: 新的TXT文件内容的字节流。
+            bytes: Byte stream of new TXT file content.
         """
         processed_lines = []
         for i, original_text in enumerate(original_texts):
-            # 如果原文是空行或仅包含空白字符，则直接保留，不进行翻译处理
+            # If original text is empty line or contains only whitespace, keep it as is without translation processing
             if not original_text.strip():
                 processed_lines.append(original_text)
                 continue
 
             translated_text = translated_texts[i]
 
-            # 根据插入模式更新内容
+            # Update content according to insert mode
             if self.insert_mode == "replace":
                 processed_lines.append(translated_text)
             elif self.insert_mode == "append":
-                # strip() 避免在原文和译文间产生多余的空白
+                # strip() to avoid extra whitespace between original and translated text
                 processed_lines.append(original_text.strip() + self.separator + translated_text.strip())
             elif self.insert_mode == "prepend":
                 processed_lines.append(translated_text.strip() + self.separator + original_text.strip())
             else:
-                self.logger.error(f"不正确的TxtTranslatorConfig参数: insert_mode='{self.insert_mode}'")
-                # 默认回退到替换模式，避免程序中断
+                self.logger.error(f"Incorrect TxtTranslatorConfig parameter: insert_mode='{self.insert_mode}'")
+                # Default fallback to replace mode to avoid program interruption
                 processed_lines.append(translated_text)
 
-        # 将所有处理后的行重新合成为一个字符串，以换行符分隔
+        # Reassemble all processed lines into a single string, separated by newlines
         new_txt_content_str = "\n".join(processed_lines)
 
-        # 返回UTF-8编码的字节流
+        # Return UTF-8 encoded byte stream
         return new_txt_content_str.encode('utf-8')
 
     def translate(self, document: Document) -> Self:
         """
-        同步翻译TXT文档。
+        Synchronously translate TXT document.
 
         Args:
-            document (Document): 待翻译的文档对象。
+            document (Document): Document object to be translated.
 
         Returns:
-            Self: 返回翻译器实例，以支持链式调用。
+            Self: Returns translator instance to support method chaining.
         """
         original_texts = self._pre_translate(document)
 
         if not original_texts:
-            self.logger.info("\n文件中没有找到需要翻译的文本内容。")
+            self.logger.info("\nNo translatable text content found in the file.")
             return self
 
-        # 过滤掉仅包含空白字符的行，避免不必要的翻译API调用
+        # Filter out lines containing only whitespace to avoid unnecessary translation API calls
         texts_to_translate = [text for text in original_texts if text.strip()]
 
-        # --- 步骤 1: (可选) 术语提取 ---
+        # --- Step 1: (Optional) Terminology extraction ---
         if self.glossary_agent and texts_to_translate:
             self.glossary_dict_gen = self.glossary_agent.send_segments(texts_to_translate, self.chunk_size)
             if self.translate_agent:
                 self.translate_agent.update_glossary_dict(self.glossary_dict_gen)
 
-        # --- 步骤 2: 调用翻译Agent ---
+        # --- Step 2: Call translation Agent ---
         translated_texts_map = {}
         if self.translate_agent and texts_to_translate:
             translated_segments = self.translate_agent.send_segments(texts_to_translate, self.chunk_size)
             translated_texts_map = dict(zip(texts_to_translate, translated_segments))
 
-        # 将翻译结果映射回原始行列表，非翻译行保持不变
+        # Map translation results back to original line list, keeping non-translated lines unchanged
         final_translated_texts = [translated_texts_map.get(text, text) for text in original_texts]
 
-        # --- 步骤 3: 后处理并更新文档内容 ---
+        # --- Step 3: Post-processing and update document content ---
         document.content = self._after_translate(final_translated_texts, original_texts)
         return self
 
     async def translate_async(self, document: Document) -> Self:
         """
-        异步翻译TXT文档。
+        Asynchronously translate TXT document.
 
         Args:
-            document (Document): 待翻译的文档对象。
+            document (Document): Document object to be translated.
 
         Returns:
-            Self: 返回翻译器实例，以支持链式调用。
+            Self: Returns translator instance to support method chaining.
         """
-        # I/O密集型操作在线程中运行
+        # Run I/O intensive operations in thread
         original_texts = await asyncio.to_thread(self._pre_translate, document)
 
         if not original_texts:
-            self.logger.info("\n文件中没有找到需要翻译的文本内容。")
+            self.logger.info("\nNo translatable text content found in the file.")
             return self
 
-        # 过滤掉仅包含空白字符的行
+        # Filter out lines containing only whitespace
         texts_to_translate = [text for text in original_texts if text.strip()]
 
-        # --- 步骤 1: (可选) 术语提取 (异步) ---
+        # --- Step 1: (Optional) Terminology extraction (async) ---
         if self.glossary_agent and texts_to_translate:
             self.glossary_dict_gen = await self.glossary_agent.send_segments_async(texts_to_translate, self.chunk_size)
             if self.translate_agent:
                 self.translate_agent.update_glossary_dict(self.glossary_dict_gen)
 
-        # --- 步骤 2: 调用翻译Agent (异步) ---
+        # --- Step 2: Call translation Agent (async) ---
         translated_texts_map = {}
         if self.translate_agent and texts_to_translate:
             translated_segments = await self.translate_agent.send_segments_async(texts_to_translate, self.chunk_size)
             translated_texts_map = dict(zip(texts_to_translate, translated_segments))
 
-        # 将翻译结果映射回原始行列表
+        # Map translation results back to original line list
         final_translated_texts = [translated_texts_map.get(text, text) for text in original_texts]
 
-        # --- 步骤 3: 后处理并更新文档内容 (I/O密集型) ---
+        # --- Step 3: Post-processing and update document content (I/O intensive) ---
         document.content = await asyncio.to_thread(
             self._after_translate, final_translated_texts, original_texts
         )

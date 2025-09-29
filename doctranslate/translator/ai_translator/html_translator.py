@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2025 QinHan
+# SPDX-FileCopyrightText: 2025 RealTimeX
 # SPDX-License-Identifier: MPL-2.0
 import asyncio
 from dataclasses import dataclass
@@ -10,28 +10,28 @@ from doctranslate.agents.segments_agent import SegmentsTranslateAgentConfig, Seg
 from doctranslate.ir.document import Document
 from doctranslate.translator.ai_translator.base import AiTranslatorConfig, AiTranslator
 
-# --- 规则定义 ---
+# --- Rule Definitions ---
 
-# 1. 不可翻译标签（黑名单）
-# 这些标签及其内容在任何情况下都不应被翻译，因为它们通常包含代码、样式或元数据。
-# 在预处理阶段，这些标签及其所有子元素将被直接从文档中移除，以确保它们不会被意外修改。
+# 1. Non-translatable tags (blacklist)
+# These tags and their content should never be translated under any circumstances, as they typically contain code, styles, or metadata.
+# During preprocessing, these tags and all their child elements will be directly removed from the document to ensure they are not accidentally modified.
 NON_TRANSLATABLE_TAGS: Set[str] = {
-    'script',  # JavaScript代码
-    'style',  # CSS样式
-    'pre',  # 预格式化文本，通常用于代码块
-    'code',  # 行内代码
-    'kbd',  # 键盘输入
-    'samp',  # 示例输出
-    'var',  # 变量
-    'noscript',  # script未启用时的内容
-    'meta',  # 元数据
-    'link',  # 外部资源链接
-    'head',  # 文档头部，通常不包含可见的可翻译内容
+    'script',  # JavaScript code
+    'style',  # CSS styles
+    'pre',  # Preformatted text, typically used for code blocks
+    'code',  # Inline code
+    'kbd',  # Keyboard input
+    'samp',  # Sample output
+    'var',  # Variables
+    'noscript',  # Content when script is not enabled
+    'meta',  # Metadata
+    'link',  # External resource links
+    'head',  # Document head, typically does not contain visible translatable content
 }
 
-# 2. 可翻译标签（白名单）
-# 定义一组被认为是“安全”的HTML标签，这些标签中的直接文本内容适合被翻译。
-# 这种白名单策略与上面的黑名单结合，提供了双重保障。
+# 2. Translatable tags (whitelist)
+# Define a set of HTML tags considered "safe", where direct text content within these tags is suitable for translation.
+# This whitelist strategy combined with the blacklist above provides dual protection.
 SAFE_TAGS: Set[str] = {
     'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
     'li', 'blockquote', 'q', 'caption',
@@ -39,12 +39,12 @@ SAFE_TAGS: Set[str] = {
     'td', 'th',
     'button', 'label', 'legend', 'option',
     'figcaption', 'summary', 'details',
-    'div',  # div 比较通用，但我们的逻辑只提取其顶层文本节点，相对安全
+    'div',  # div is quite generic, but our logic only extracts its top-level text nodes, which is relatively safe
 }
 
-# 3. 可翻译属性（白名单）
-# 定义一组“安全”的属性，这些属性的值通常是给用户看的可读文本。
-# 格式为: { 'tag_name': ['attr1', 'attr2'], ... }
+# 3. Translatable attributes (whitelist)
+# Define a set of "safe" attributes whose values are typically readable text for users.
+# Format: { 'tag_name': ['attr1', 'attr2'], ... }
 SAFE_ATTRIBUTES: Dict[str, List[str]] = {
     'img': ['alt', 'title'],
     'a': ['title'],
@@ -52,7 +52,7 @@ SAFE_ATTRIBUTES: Dict[str, List[str]] = {
     'textarea': ['placeholder', 'title'],
     'abbr': ['title'],
     'area': ['alt'],
-    # 对于所有标签，title属性通常是可翻译的
+    # For all tags, the title attribute is typically translatable
     '*': ['title']
 }
 
@@ -60,28 +60,28 @@ SAFE_ATTRIBUTES: Dict[str, List[str]] = {
 @dataclass
 class HtmlTranslatorConfig(AiTranslatorConfig):
     """
-    HTML翻译器的配置类。
+    Configuration class for HTML translator.
 
     Attributes:
         insert_mode (Literal["replace", "append", "prepend"]):
-            指定如何插入翻译文本。
-            - "replace": 用译文替换原文。
-            - "append": 在原文后追加译文。
-            - "prepend": 在原文前追加译文。
-        separator (str): 在 "append" 或 "prepend" 模式下，用于分隔原文和译文的字符串。
+            Specifies how to insert translated text.
+            - "replace": Replace original text with translated text.
+            - "append": Append translated text after original text.
+            - "prepend": Prepend translated text before original text.
+        separator (str): String used to separate original and translated text in "append" or "prepend" modes.
     """
     insert_mode: Literal["replace", "append", "prepend"] = "replace"
-    separator: str = " "  # HTML中用空格作为默认分隔符可能更合适
+    separator: str = " "  # Using space as default separator might be more appropriate in HTML
 
 
 class HtmlTranslator(AiTranslator):
     """
-    一个用于翻译 HTML 文件内容的翻译器。
-    它采用黑白名单结合的策略，以最大程度地保留页面样式和功能：
-    1. 黑名单：首先，完全移除 script, style, code 等明确不可翻译的标签及其内容。
-    2. 白名单：然后，在剩余的HTML中，只提取和翻译指定安全标签和属性中的文本内容。
-    3. 注释保护：显式地跳过HTML注释，确保它们不被翻译。
-    这种方法能有效避免破坏页面结构、脚本、样式和注释。
+    A translator for HTML file content.
+    It uses a combined blacklist and whitelist strategy to maximally preserve page styles and functionality:
+    1. Blacklist: First, completely remove explicitly non-translatable tags like script, style, code and their content.
+    2. Whitelist: Then, in the remaining HTML, only extract and translate text content from specified safe tags and attributes.
+    3. Comment protection: Explicitly skip HTML comments to ensure they are not translated.
+    This approach effectively avoids breaking page structure, scripts, styles, and comments.
     """
 
     def __init__(self, config: HtmlTranslatorConfig):
@@ -110,35 +110,35 @@ class HtmlTranslator(AiTranslator):
 
     def _pre_translate(self, document: Document) -> Tuple[BeautifulSoup, List[Dict], List[str]]:
         """
-        解析HTML文档，根据规则提取所有需要翻译的文本节点和属性。
-        步骤:
-        1. 使用黑名单移除所有不可翻译的标签，从根本上防止它们被处理。
-        2. 遍历剩余的HTML元素，根据白名单提取可翻译的文本和属性值，同时跳过注释。
+        Parse HTML document and extract all text nodes and attributes that need translation according to rules.
+        Steps:
+        1. Use blacklist to remove all non-translatable tags, fundamentally preventing them from being processed.
+        2. Traverse remaining HTML elements, extract translatable text and attribute values according to whitelist, while skipping comments.
         """
         soup = BeautifulSoup(document.content, 'lxml')
 
-        # 步骤 1: 移除所有不可翻译的标签及其内容
+        # Step 1: Remove all non-translatable tags and their content
         for tag in soup.find_all(NON_TRANSLATABLE_TAGS):
             tag.decompose()
 
         translatable_items = []
         original_texts = []
 
-        # 步骤 2: 遍历所有剩余标签，提取可翻译内容
+        # Step 2: Traverse all remaining tags, extract translatable content
         for tag in soup.find_all(True):
-            # --- 2a. 翻译安全标签内的文本节点 ---
+            # --- 2a. Translate text nodes within safe tags ---
             if tag.name in SAFE_TAGS:
-                # 只处理标签的直接子节点中的文本，这是保留样式的关键。
+                # Only process text in direct child nodes of tags, this is key to preserving styles.
                 for child in list(tag.children):
-                    # 【关键修改】确保处理的是纯文本节点，而不是注释（Comment是NavigableString的子类）
+                    # 【Key modification】Ensure we're processing pure text nodes, not comments (Comment is a subclass of NavigableString)
                     if isinstance(child, NavigableString) and not isinstance(child, Comment) and child.strip():
                         text = str(child)
                         translatable_items.append({'type': 'node', 'object': child})
                         original_texts.append(text)
 
-            # --- 2b. 翻译安全标签内的安全属性 ---
+            # --- 2b. Translate safe attributes within safe tags ---
             attributes_to_check = SAFE_ATTRIBUTES.get(tag.name, []) + SAFE_ATTRIBUTES.get('*', [])
-            for attr in set(attributes_to_check):  # 使用set去重
+            for attr in set(attributes_to_check):  # Use set to deduplicate
                 if tag.has_attr(attr) and tag[attr].strip():
                     value = tag[attr]
                     translatable_items.append({'type': 'attribute', 'tag': tag, 'attribute': attr})
@@ -149,10 +149,10 @@ class HtmlTranslator(AiTranslator):
     def _after_translate(self, soup: BeautifulSoup, translatable_items: list,
                          translated_texts: list[str], original_texts: list[str]) -> bytes:
         """
-        将翻译后的文本写回到BeautifulSoup对象中对应的节点或属性，并返回最终的HTML字节流。
+        Write translated text back to corresponding nodes or attributes in BeautifulSoup object and return final HTML byte stream.
         """
         if len(translatable_items) != len(translated_texts):
-            self.logger.error("翻译前后的文本片段数量不匹配 (%d vs %d)，跳过写入操作以防损坏文件。",
+            self.logger.error("Number of text segments before and after translation don't match (%d vs %d), skipping write operation to prevent file corruption.",
                               len(translatable_items), len(translated_texts))
             return soup.encode('utf-8')
 
@@ -163,11 +163,11 @@ class HtmlTranslator(AiTranslator):
             new_content = ""
             if self.insert_mode == "replace":
                 if item['type'] == 'node':
-                    # 对于文本节点，保留原文前后的空白字符，这对维持内联元素的间距至关重要。
+                    # For text nodes, preserve whitespace before and after original text, this is crucial for maintaining inline element spacing.
                     leading_space = original_text[:len(original_text) - len(original_text.lstrip())]
                     trailing_space = original_text[len(original_text.rstrip()):]
                     new_content = leading_space + translated_text + trailing_space
-                else:  # 属性
+                else:  # attribute
                     new_content = translated_text
 
             elif self.insert_mode == "append":
@@ -175,13 +175,13 @@ class HtmlTranslator(AiTranslator):
             elif self.insert_mode == "prepend":
                 new_content = translated_text + self.separator + original_text
             else:
-                self.logger.error(f"不正确的HtmlTranslatorConfig参数: insert_mode='{self.insert_mode}'")
-                new_content = original_text  # 出错时恢复原文
+                self.logger.error(f"Incorrect HtmlTranslatorConfig parameter: insert_mode='{self.insert_mode}'")
+                new_content = original_text  # Restore original text on error
 
-            # 根据类型将内容写回
+            # Write content back according to type
             if item['type'] == 'node':
                 node = item['object']
-                # 检查节点是否仍然在解析树中，以防在处理过程中被移动或删除
+                # Check if node is still in parse tree, in case it was moved or deleted during processing
                 if node.parent:
                     node.replace_with(NavigableString(new_content))
             elif item['type'] == 'attribute':
@@ -189,17 +189,17 @@ class HtmlTranslator(AiTranslator):
                 attr = item['attribute']
                 tag[attr] = new_content
 
-        # 将修改后的BeautifulSoup对象编码为utf-8字节流
+        # Encode modified BeautifulSoup object as utf-8 byte stream
         return soup.encode('utf-8')
 
     def translate(self, document: Document) -> Self:
         """
-        同步翻译HTML文档。
+        Synchronously translate HTML document.
         """
         soup, translatable_items, original_texts = self._pre_translate(document)
         if not translatable_items:
-            self.logger.info("\nHTML文件中没有找到符合安全规则的可翻译内容。")
-            # 即使没有翻译内容，也返回经过清理（移除非翻译标签）的文档内容
+            self.logger.info("\nNo translatable content found in HTML file that meets safety rules.")
+            # Even without translatable content, return cleaned document content (with non-translatable tags removed)
             document.content = soup.encode('utf-8')
             return self
 
@@ -216,12 +216,12 @@ class HtmlTranslator(AiTranslator):
 
     async def translate_async(self, document: Document) -> Self:
         """
-        异步翻译HTML文档。
+        Asynchronously translate HTML document.
         """
         soup, translatable_items, original_texts = await asyncio.to_thread(self._pre_translate, document)
 
         if not translatable_items:
-            self.logger.info("\nHTML文件中没有找到符合安全规则的可翻译内容。")
+            self.logger.info("\nNo translatable content found in HTML file that meets safety rules.")
             document.content = await asyncio.to_thread(soup.encode, 'utf-8')
             return self
 

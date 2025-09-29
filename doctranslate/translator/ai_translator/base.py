@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2025 QinHan
+# SPDX-FileCopyrightText: 2025 RealTimeX
 # SPDX-License-Identifier: MPL-2.0
 from abc import abstractmethod
 from dataclasses import dataclass, field
@@ -17,18 +17,18 @@ if TYPE_CHECKING:
 class AiTranslatorConfig(TranslatorConfig, AgentConfig):
     base_url: str | None = field(
         default=None,
-        metadata={"description": "OpenAI兼容地址，当skip_translate为False时为必填项"},
+        metadata={"description": "OpenAI compatible address, required when skip_translate is False"},
     )
     model_id: str | None = field(
-        default=None, metadata={"description": "当skip_translate为False时为必填项"}
+        default=None, metadata={"description": "Required when skip_translate is False"}
     )
-    to_lang: str = "简体中文"
+    to_lang: str = "Simplified Chinese"
     custom_prompt: str | None = None
     chunk_size: int = 3000
     glossary_dict: dict[str, str] | None = field(default=None)
     glossary_generate_enable: bool = False
     glossary_agent_config: '_GlossaryAgentConfig | None' = None  # type: ignore[name-defined]
-    skip_translate: bool = False  # 当skip_translate为False时base_url、api_key、model_id为必填项
+    skip_translate: bool = False  # When skip_translate is False, base_url, api_key, model_id are required
 
 
 T = TypeVar("T", bound=Document)
@@ -36,7 +36,7 @@ T = TypeVar("T", bound=Document)
 
 class AiTranslator(Translator[T]):
     """
-    翻译中间文本（原地替换），Translator不做格式转换
+    Translate intermediate text (in-place replacement), Translator does not perform format conversion
     """
 
     def __init__(self, config: AiTranslatorConfig):

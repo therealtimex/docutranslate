@@ -1,28 +1,28 @@
-# SPDX-FileCopyrightText: 2025 QinHan
+# SPDX-FileCopyrightText: 2025 RealTimeX
 # SPDX-License-Identifier: MPL-2.0
 import json
 import re
 
 
 def get_json_size(js: dict) -> int:
-    """计算字典转换成JSON字符串并以UTF-8编码后的字节大小"""
+    """Calculate the byte size of a dictionary after converting to JSON string and UTF-8 encoding"""
     return len(json.dumps(js, ensure_ascii=False).encode('utf-8'))
 
 
 def segments2json_chunks(segments: list[str], chunk_size_max: int) -> tuple[dict[str, str],
 list[dict[str, str]], list[tuple[int, int]]]:
     """
-    将文本段列表（segments）转换为多个JSON块。
-    (函数注释不变)
+    Convert a list of text segments into multiple JSON chunks.
+    (Function annotation unchanged)
     """
 
-    # === 第一部分：预处理 (这部分逻辑可以保持不变) ===
+    # === Part 1: Preprocessing (this logic can remain unchanged) ===
     new_segments = []
     merged_indices_list = []
 
     for segment in segments:
-        # 检查单个segment（作为一个JSON对象的值）是否已超限
-        # 使用一个较长的key来预估，避免key长度变化带来的误差
+        # Check if a single segment (as a value in a JSON object) already exceeds the limit
+        # Use a longer key for estimation to avoid errors from key length variations
         long_key_estimate = str(len(segments) + len(new_segments))
         if get_json_size({long_key_estimate: segment}) > chunk_size_max:
             sub_segments = []
@@ -35,7 +35,7 @@ list[dict[str, str]], list[tuple[int, int]]]:
                     if current_sub_segment:
                         sub_segments.append(current_sub_segment)
 
-                    # 即使单行超限，也必须作为一个独立的子段添加
+                    # Even if a single line exceeds the limit, it must be added as an independent sub-segment
                     sub_segments.append(line)
                     current_sub_segment = ""
                 else:
@@ -55,7 +55,7 @@ list[dict[str, str]], list[tuple[int, int]]]:
         else:
             new_segments.append(segment)
 
-    # === 第二部分：组合成 JSON 块 (修正部分) ===
+    # === Part 2: Combine into JSON chunks (corrected part) ===
     json_chunks_list = []
     if not new_segments:
         return {}, [], []
@@ -65,8 +65,8 @@ list[dict[str, str]], list[tuple[int, int]]]:
         prospective_chunk = chunk.copy()
         prospective_chunk[str(key)] = val
 
-        # 修复bug: 即使chunk为空，如果 prospective_chunk（即单个元素）已超限，
-        # 也应该先提交旧的chunk。
+        # Fix bug: Even if chunk is empty, if prospective_chunk (i.e., single element) exceeds limit,
+        # should first submit the old chunk.
         if get_json_size(prospective_chunk) > chunk_size_max and chunk:
             json_chunks_list.append(chunk)
             chunk = {str(key): val}
@@ -76,11 +76,11 @@ list[dict[str, str]], list[tuple[int, int]]]:
     if chunk:
         json_chunks_list.append(chunk)
 
-    # ==================== 核心修正 ====================
-    # 根据完整的 new_segments 列表构建最终的、完整的 js 字典
-    # 这确保了第一个返回值是完整的
+    # ==================== Core Correction ====================
+    # Build the final, complete js dictionary based on the complete new_segments list
+    # This ensures the first return value is complete
     js = {str(i): segment for i, segment in enumerate(new_segments)}
-    # ================================================
+    # =========================================================
 
     return js, json_chunks_list, merged_indices_list
 

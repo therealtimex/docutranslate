@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2025 QinHan
+# SPDX-FileCopyrightText: 2025 RealTimeX
 # SPDX-License-Identifier: MPL-2.0
 import asyncio
 from dataclasses import dataclass
@@ -48,7 +48,7 @@ class XlsxTranslator(AiTranslator):
             self.translate_agent = SegmentsTranslateAgent(agent_config)
         self.insert_mode = config.insert_mode
         self.separator = config.separator
-        # --- 新增功能 ---
+        # --- New feature ---
         self.translate_regions = config.translate_regions
 
     def _pre_translate(self, document: Document):
@@ -164,7 +164,7 @@ class XlsxTranslator(AiTranslator):
             self.glossary_dict_gen = self.glossary_agent.send_segments(original_texts, self.chunk_size)
             if self.translate_agent:
                 self.translate_agent.update_glossary_dict(self.glossary_dict_gen)
-        # --- 步骤 2: 调用翻译函数 ---
+        # --- Step 2: Call translation function ---
         if self.translate_agent:
             translated_texts = self.translate_agent.send_segments(original_texts, self.chunk_size)
         else:
@@ -186,7 +186,7 @@ class XlsxTranslator(AiTranslator):
             if self.translate_agent:
                 self.translate_agent.update_glossary_dict(self.glossary_dict_gen)
 
-        # --- 步骤 2: 调用翻译函数 ---
+        # --- Step 2: Call translation function ---
         if self.translate_agent:
             translated_texts = await self.translate_agent.send_segments_async(original_texts, self.chunk_size)
         else:

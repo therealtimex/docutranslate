@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2025 QinHan
+# SPDX-FileCopyrightText: 2025 RealTimeX
 # SPDX-License-Identifier: MPL-2.0
 
 import asyncio
@@ -44,7 +44,7 @@ class AssTranslator(AiTranslator):
             self.translate_agent = SegmentsTranslateAgent(agent_config)
         self.insert_mode = config.insert_mode
         self.separator = config.separator
-        self.translate_regions = config.translate_regions  # 暂不处理，保留接口
+        self.translate_regions = config.translate_regions  # Not currently processed, interface reserved
 
     def _pre_translate(self, document: Document):
         """
@@ -90,7 +90,7 @@ class AssTranslator(AiTranslator):
             else:
                 self.logger.error(f"Unsupported insert mode: {self.insert_mode}")
 
-        # 输出为字符串，再编码为 bytes
+        # Output as string, then encode to bytes
         output_str = subs.to_string(format_="ass")
         return output_str.encode('utf-8-sig')  # with BOM for players
 

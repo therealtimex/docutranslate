@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2025 QinHan
+# SPDX-FileCopyrightText: 2025 RealTimeX
 # SPDX-License-Identifier: MPL-2.0
 import asyncio
 from dataclasses import dataclass
@@ -16,15 +16,15 @@ from doctranslate.translator.ai_translator.base import AiTranslatorConfig, AiTra
 
 
 def is_image_run(run: Run) -> bool:
-    """检查一个 run 是否包含图片。"""
-    # w:drawing 是嵌入式图片的标志, w:pict 是 VML 图片的标志
+    """Check if a run contains an image."""
+    # w:drawing is the marker for embedded images, w:pict is the marker for VML images
     return '<w:drawing' in run.element.xml or '<w:pict' in run.element.xml
 
 
 @dataclass
 class DocxTranslatorConfig(AiTranslatorConfig):
     """
-    DocxTranslator 的配置类。
+    Configuration class for DocxTranslator.
     """
     insert_mode: Literal["replace", "append", "prepend"] = "replace"
     separator: str = "\n"
@@ -32,8 +32,8 @@ class DocxTranslatorConfig(AiTranslatorConfig):
 
 class DocxTranslator(AiTranslator):
     """
-    用于翻译 .docx 文件的翻译器。
-    此版本经过优化，可以处理图文混排的段落而不会丢失图片。
+    Translator for .docx files.
+    This version is optimized to handle paragraphs with mixed text and images without losing images.
     """
 
     def __init__(self, config: DocxTranslatorConfig):
@@ -62,12 +62,12 @@ class DocxTranslator(AiTranslator):
 
     def _pre_translate(self, document: Document) -> Tuple[DocumentObject, List[Dict[str, Any]], List[str]]:
         """
-        [已重构] 预处理 .docx 文件，在 Run 级别上提取文本，以避免破坏图片。
-        :param document: 包含 .docx 文件内容的 Document 对象。
-        :return: 一个元组，包含：
-                 - docx.Document 对象
-                 - 一个包含文本块信息的列表 (每个元素代表一组连续的文本 run)
-                 - 一个包含所有待翻译原文的列表
+        [Refactored] Preprocess .docx file, extract text at Run level to avoid breaking images.
+        :param document: Document object containing .docx file content.
+        :return: A tuple containing:
+                 - docx.Document object
+                 - A list containing text block information (each element represents a group of consecutive text runs)
+                 - A list containing all original texts to be translated
         """
         doc = docx.Document(BytesIO(document.content))
         elements_to_translate = []
@@ -80,28 +80,28 @@ class DocxTranslator(AiTranslator):
 
             for run in para.runs:
                 if is_image_run(run):
-                    # 遇到图片，将之前累积的文本作为一个翻译单元
+                    # Encountered an image, treat previously accumulated text as one translation unit
                     if current_text_segment.strip():
                         elements_to_translate.append({"type": "text_runs", "runs": current_runs})
                         original_texts.append(current_text_segment)
-                    # 重置累加器
+                    # Reset accumulator
                     current_text_segment = ""
                     current_runs = []
                 else:
-                    # 累积文本 run
+                    # Accumulate text run
                     current_runs.append(run)
                     current_text_segment += run.text
 
-            # 处理段落末尾的最后一个文本块
+            # Handle the last text block at the end of paragraph
             if current_text_segment.strip():
                 elements_to_translate.append({"type": "text_runs", "runs": current_runs})
                 original_texts.append(current_text_segment)
 
-        # 遍历所有段落
+        # Traverse all paragraphs
         for para in doc.paragraphs:
             process_paragraph(para)
 
-        # 遍历所有表格
+        # Traverse all tables
         for table in doc.tables:
             for row in table.rows:
                 for cell in row.cells:
@@ -113,7 +113,7 @@ class DocxTranslator(AiTranslator):
     def _after_translate(self, doc: DocumentObject, elements_to_translate: List[Dict[str, Any]],
                          translated_texts: List[str], original_texts: List[str]) -> bytes:
         """
-        [已重构] 将翻译后的文本写回到对应的 text runs 中，保留图片和样式。
+        [Refactored] Write translated text back to corresponding text runs, preserving images and styles.
         """
         translation_map = dict(zip(original_texts, translated_texts))
 
@@ -122,7 +122,7 @@ class DocxTranslator(AiTranslator):
             original_text = original_texts[i]
             translated_text = translated_texts[i]
 
-            # 根据插入模式确定最终文本
+            # Determine final text based on insert mode
             if self.insert_mode == "replace":
                 final_text = translated_text
             elif self.insert_mode == "append":
@@ -136,25 +136,48 @@ class DocxTranslator(AiTranslator):
             if not runs:
                 continue
 
-            # --- 这是修改的核心部分 ---
-            # 1. 将完整的翻译文本写入第一个 run
-            first_run = runs[0]
-            first_run.text = final_text
+            # --- Core modification section ---
+            # Intelligently distribute translated text to each run, preserving original formatting
+            if len(runs) == 1:
+                # If there's only one run, assign directly
+                runs[0].text = final_text
+            else:
+                # Multiple runs case: distribute translated text according to original text character proportions
+                original_lengths = [len(run.text) for run in runs]
+                total_original_length = sum(original_lengths)
 
-            # 2. 清空该文本块中其余 run 的内容，但保留 run 本身及其格式
-            #    这可以防止重复文本，同时保留文档结构
-            for run in runs[1:]:
-                run.text = ""
-            # --- 修改结束 ---
+                if total_original_length == 0:
+                    # If original length is 0, put all text in the first run
+                    runs[0].text = final_text
+                    for run in runs[1:]:
+                        run.text = ""
+                else:
+                    # More precise proportional distribution of translated text
+                    cumulative_length = 0
+                    final_text_len = len(final_text)
 
-        # 将修改后的文档保存到 BytesIO 流
+                    for i, run in enumerate(runs):
+                        if i == len(runs) - 1:
+                            # Last run gets all remaining characters
+                            run.text = final_text[cumulative_length:]
+                        else:
+                            # Calculate cumulative character count up to current run
+                            cumulative_original = sum(original_lengths[:i+1])
+                            target_pos = int(final_text_len * cumulative_original / total_original_length)
+
+                            # Text for current run
+                            run.text = final_text[cumulative_length:target_pos]
+                            cumulative_length = target_pos
+            # --- End of modification ---
+
+        # Save modified document to BytesIO stream
         doc_output_stream = BytesIO()
         doc.save(doc_output_stream)
         return doc_output_stream.getvalue()
 
     def translate(self, document: Document) -> Self:
         """
-        同步翻译 .docx 文件。
+        Synchronously translate .docx file.
         """
         doc, elements_to_translate, original_texts = self._pre_translate(document)
         if not original_texts:
@@ -169,24 +192,24 @@ class DocxTranslator(AiTranslator):
             if self.translate_agent:
                 self.translate_agent.update_glossary_dict(self.glossary_dict_gen)
 
-        # 调用翻译 agent
+        # Call translation agent
         if self.translate_agent:
             translated_texts = self.translate_agent.send_segments(original_texts, self.chunk_size)
         else:
             translated_texts = original_texts
 
-        # 将翻译结果写回文档
+        # Write translation results back to document
         document.content = self._after_translate(doc, elements_to_translate, translated_texts, original_texts)
         return self
 
     async def translate_async(self, document: Document) -> Self:
         """
-        异步翻译 .docx 文件。
+        Asynchronously translate .docx file.
         """
         doc, elements_to_translate, original_texts = await asyncio.to_thread(self._pre_translate, document)
         if not original_texts:
             print("\nNo translatable text found in the document.")
-            # 在异步环境中正确保存和返回
+            # Properly save and return in async environment
             output_stream = BytesIO()
             doc.save(output_stream)
             document.content = output_stream.getvalue()
@@ -197,12 +220,12 @@ class DocxTranslator(AiTranslator):
             if self.translate_agent:
                 self.translate_agent.update_glossary_dict(self.glossary_dict_gen)
 
-        # 异步调用翻译 agent
+        # Asynchronously call translation agent
         if self.translate_agent:
             translated_texts = await self.translate_agent.send_segments_async(original_texts, self.chunk_size)
         else:
             translated_texts = original_texts
-        # 将翻译结果写回文档
+        # Write translation results back to document
         document.content = await asyncio.to_thread(self._after_translate, doc, elements_to_translate, translated_texts,
                                                    original_texts)
         return self

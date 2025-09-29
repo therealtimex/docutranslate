@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2025 QinHan
+# SPDX-FileCopyrightText: 2025 RealTimeX
 # SPDX-License-Identifier: MPL-2.0
 import re
 from typing import List
@@ -9,10 +9,10 @@ from typing import List
 class MarkdownBlockSplitter:
     def __init__(self, max_block_size: int = 5000):
         """
-        初始化Markdown分块器
+        Initialize Markdown block splitter
 
-        参数:
-            max_block_size: 每个块的最大字节数
+        Parameters:
+            max_block_size: Maximum number of bytes per block
         """
         self.max_block_size = max_block_size
 
@@ -22,14 +22,14 @@ class MarkdownBlockSplitter:
 
     def split_markdown(self, markdown_text: str) -> List[str]:
         """
-        将Markdown文本分割成指定大小的块
-        确保可以通过简单拼接重建原始文本（分割的代码块除外）
-        尽量保持标题与其对应内容在同一个块中
+        Split Markdown text into blocks of specified size
+        Ensure original text can be reconstructed through simple concatenation (except for split code blocks)
+        Try to keep headings with their corresponding content in the same block
         """
-        # 1. 将文本分割成逻辑块
+        # 1. Split text into logical blocks
         logical_blocks = self._split_into_logical_blocks(markdown_text)
 
-        # 2. 合并逻辑块，使其不超过 max_block_size
+        # 2. Merge logical blocks, ensuring they don't exceed max_block_size
         chunks = []
         current_chunk_parts = []
         current_size = 0
@@ -37,31 +37,31 @@ class MarkdownBlockSplitter:
         for block in logical_blocks:
             block_size = self._get_bytes(block)
 
-            # 情况1：块本身就过大
+            # Case 1: The block itself is too large
             if block_size > self.max_block_size:
-                # 先将当前积累的块输出
+                # First output the currently accumulated blocks
                 if current_chunk_parts:
                     chunks.append("".join(current_chunk_parts))
                     current_chunk_parts = []
                     current_size = 0
 
-                # 分割这个超大块并直接添加到结果中
+                # Split this oversized block and add it directly to results
                 chunks.extend(self._split_large_block(block))
                 continue
 
-            # 情况2：将此块添加到当前chunk会超限
+            # Case 2: Adding this block to current chunk would exceed limit
             if current_size + block_size > self.max_block_size:
                 if current_chunk_parts:
                     chunks.append("".join(current_chunk_parts))
 
                 current_chunk_parts = [block]
                 current_size = block_size
-            # 情况3：正常添加
+            # Case 3: Normal addition
             else:
                 current_chunk_parts.append(block)
                 current_size += block_size
 
-        # 添加最后一个剩余的chunk
+        # Add the last remaining chunk
         if current_chunk_parts:
             chunks.append("".join(current_chunk_parts))
 
@@ -69,12 +69,12 @@ class MarkdownBlockSplitter:
 
     def _split_into_logical_blocks(self, markdown_text: str) -> List[str]:
         """
-        将Markdown文本分割成逻辑块（标题、段落、代码块、空行分隔符等）
+        Split Markdown text into logical blocks (headings, paragraphs, code blocks, empty line separators, etc.)
         """
-        # 标准化换行符
+        # Normalize line breaks
         text = markdown_text.replace('\r\n', '\n')
 
-        # 分割代码块和其他内容
+        # Split code blocks from other content
         code_block_pattern = r'(```[\s\S]*?```|~~~[\s\S]*?~~~)'
         parts = re.split(code_block_pattern, text)
 
@@ -83,22 +83,22 @@ class MarkdownBlockSplitter:
             if not part:
                 continue
 
-            if i % 2 == 1:  # 这是一个代码块
+            if i % 2 == 1:  # This is a code block
                 blocks.append(part)
-            else:  # 这是普通Markdown内容
-                # 按一个或多个空行分割，并保留分隔符
-                # 这能有效分离段落、列表、标题等，并保留它们之间的空行
+            else:  # This is regular Markdown content
+                # Split by one or more empty lines, preserving separators
+                # This effectively separates paragraphs, lists, headings, etc., while preserving empty lines between them
                 sub_parts = re.split(r'(\n{2,})', part)
-                # 过滤掉 re.split 可能产生的空字符串
+                # Filter out empty strings that re.split may produce
                 blocks.extend([p for p in sub_parts if p])
 
         return blocks
 
     def _split_large_block(self, block: str) -> List[str]:
         """
-        分割单个超过 max_block_size 的大块
+        Split a single large block that exceeds max_block_size
         """
-        # 优先处理代码块
+        # Prioritize handling code blocks
         if block.startswith(('```', '~~~')):
             fence = '```' if block.startswith('```') else '~~~'
             lines = block.split('\n')
@@ -126,7 +126,7 @@ class MarkdownBlockSplitter:
                 chunks.append('\n'.join(current_chunk_lines))
             return chunks
 
-        # 对普通大文本按行分割
+        # Split regular large text by lines
         lines = block.split('\n')
         chunks = []
         current_chunk = []
@@ -136,7 +136,7 @@ class MarkdownBlockSplitter:
             if current_size + line_size > self.max_block_size and current_chunk:
                 chunks.append('\n'.join(current_chunk))
                 current_chunk = [line]
-                current_size = line_size - 1  # -1 for the first line does not have a leading '\n'
+                current_size = line_size - 1  # -1 because the first line doesn't have a leading '\n'
             else:
                 current_chunk.append(line)
                 current_size += line_size
@@ -149,18 +149,18 @@ class MarkdownBlockSplitter:
 
 def split_markdown_text(markdown_text: str, max_block_size=5000) -> List[str]:
     """
-    将Markdown字符串分割成不超过max_block_size的块
+    Split Markdown string into blocks not exceeding max_block_size
     """
     splitter = MarkdownBlockSplitter(max_block_size=max_block_size)
     chunks = splitter.split_markdown(markdown_text)
-    # 过滤掉仅由空白字符组成的块
+    # Filter out blocks consisting only of whitespace characters
     return [chunk for chunk in chunks if chunk.strip()]
 
 
 def _needs_single_newline_join(prev_chunk: str, next_chunk: str) -> bool:
     """
-    判断两个块是否应该用单个换行符连接
-    这通常发生在列表、表格、引用块的连续行之间
+    Determine whether two blocks should be joined with a single newline
+    This usually occurs between consecutive lines of lists, tables, and quote blocks
     """
     if not prev_chunk.strip() or not next_chunk.strip():
         return False
@@ -168,17 +168,17 @@ def _needs_single_newline_join(prev_chunk: str, next_chunk: str) -> bool:
     last_line_prev = prev_chunk.rstrip().split('\n')[-1].lstrip()
     first_line_next = next_chunk.lstrip().split('\n')[0].lstrip()
 
-    # 表格
+    # Tables
     if last_line_prev.startswith('|') and last_line_prev.endswith('|') and \
             first_line_next.startswith('|') and first_line_next.endswith('|'):
         return True
 
-    # 列表 (无序和有序)
+    # Lists (unordered and ordered)
     list_markers = r'^\s*([-*+]|\d+\.)\s+'
     if re.match(list_markers, last_line_prev) and re.match(list_markers, first_line_next):
         return True
 
-    # 引用
+    # Quotes
     if last_line_prev.startswith('>') and first_line_next.startswith('>'):
         return True
 
@@ -187,7 +187,7 @@ def _needs_single_newline_join(prev_chunk: str, next_chunk: str) -> bool:
 
 def join_markdown_texts(markdown_texts: List[str]) -> str:
     """
-    智能地拼接Markdown块列表
+    Intelligently join a list of Markdown blocks
     """
     if not markdown_texts:
         return ""
@@ -197,11 +197,11 @@ def join_markdown_texts(markdown_texts: List[str]) -> str:
         prev_chunk = markdown_texts[i - 1]
         current_chunk = markdown_texts[i]
 
-        # 判断是否应该用单换行还是双换行
+        # Determine whether to use single or double newline
         if _needs_single_newline_join(prev_chunk, current_chunk):
             separator = "\n"
         else:
-            # 默认使用双换行来分隔不同的块
+            # Default to using double newlines to separate different blocks
             separator = "\n\n"
 
         joined_text += separator + current_chunk

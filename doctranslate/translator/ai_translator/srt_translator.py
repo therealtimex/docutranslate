@@ -1,10 +1,10 @@
-# SPDX-FileCopyrightText: 2025 QinHan
+# SPDX-FileCopyrightText: 2025 RealTimeX
 # SPDX-License-Identifier: MPL-2.0
 import asyncio
 from dataclasses import dataclass
 from typing import Self, Literal
 
-import srt  # 导入srt库来处理字幕文件
+import srt  # Import srt library to process subtitle files
 
 from doctranslate.agents.segments_agent import SegmentsTranslateAgentConfig, SegmentsTranslateAgent
 from doctranslate.ir.document import Document
@@ -19,8 +19,8 @@ class SrtTranslatorConfig(AiTranslatorConfig):
 
 class SrtTranslator(AiTranslator):
     """
-    一个用于翻译 SRT (.srt) 字幕文件的翻译器。
-    它会提取每个字幕块的文本内容，进行翻译，然后根据配置将译文写回。
+    A translator for SRT (.srt) subtitle files.
+    It extracts text content from each subtitle block, translates it, and writes back the translated text according to configuration.
     """
 
     def __init__(self, config: SrtTranslatorConfig):
@@ -49,26 +49,26 @@ class SrtTranslator(AiTranslator):
 
     def _pre_translate(self, document: Document):
         """
-        预处理步骤：解析SRT文件，提取所有字幕文本。
+        Preprocessing step: Parse SRT file and extract all subtitle text.
 
         Returns:
-            tuple: (解析后的字幕对象列表, 待翻译的原文文本列表)
+            tuple: (List of parsed subtitle objects, List of original texts to be translated)
         """
         try:
-            # 使用 utf-8-sig 解码以处理可能存在的BOM (Byte Order Mark)
+            # Use utf-8-sig decoding to handle possible BOM (Byte Order Mark)
             srt_content = document.content.decode('utf-8-sig')
         except (UnicodeDecodeError, AttributeError) as e:
-            self.logger.error(f"无法解码SRT文件内容，请确保文件编码为UTF-8: {e}")
+            self.logger.error(f"Unable to decode SRT file content, please ensure file encoding is UTF-8: {e}")
             return [], []
 
-        # 使用 srt 库解析内容
+        # Use srt library to parse content
         try:
             subtitles = list(srt.parse(srt_content))
         except srt.SRTParseError as e:
-            self.logger.error(f"解析SRT文件失败: {e}")
+            self.logger.error(f"Failed to parse SRT file: {e}")
             return [], []
 
-        # 提取所有原文文本，准备进行批量翻译
+        # Extract all original texts, prepare for batch translation
         original_texts = [sub.content for sub in subtitles]
 
         return subtitles, original_texts
@@ -76,65 +76,65 @@ class SrtTranslator(AiTranslator):
     def _after_translate(self, subtitles: list[srt.Subtitle], translated_texts: list[str],
                          original_texts: list[str]) -> bytes:
         """
-        翻译后处理步骤：将译文根据配置模式写回字幕对象，并生成新的SRT文件内容。
+        Post-translation step: Write translated text back to subtitle objects according to configuration mode and generate new SRT file content.
 
         Returns:
-            bytes: 新的SRT文件内容的字节流。
+            bytes: Byte stream of new SRT file content.
         """
         for i, sub in enumerate(subtitles):
             translated_text = translated_texts[i]
             original_text = original_texts[i]
 
-            # 根据插入模式更新字幕内容
+            # Update subtitle content according to insert mode
             if self.insert_mode == "replace":
                 sub.content = translated_text
             elif self.insert_mode == "append":
-                # strip() 避免在原文和译文间产生多余的空白
+                # strip() to avoid extra whitespace between original and translated text
                 sub.content = original_text.strip() + self.separator + translated_text.strip()
             elif self.insert_mode == "prepend":
                 sub.content = translated_text.strip() + self.separator + original_text.strip()
             else:
-                self.logger.error(f"不正确的SrtTranslatorConfig参数: insert_mode='{self.insert_mode}'")
-                # 默认回退到替换模式，避免程序中断
+                self.logger.error(f"Incorrect SrtTranslatorConfig parameter: insert_mode='{self.insert_mode}'")
+                # Default fallback to replace mode to avoid program interruption
                 sub.content = translated_text
 
-        # 使用 srt 库将修改后的字幕对象列表重新合成为SRT格式的字符串
+        # Use srt library to recompose modified subtitle object list into SRT format string
         new_srt_content_str = srt.compose(subtitles)
 
-        # 返回UTF-8编码的字节流
+        # Return UTF-8 encoded byte stream
         return new_srt_content_str.encode('utf-8')
 
     def translate(self, document: Document) -> Self:
         """
-        同步翻译SRT文档。
+        Synchronously translate SRT document.
         """
         subtitles, original_texts = self._pre_translate(document)
 
         if not original_texts:
-            self.logger.info("\n文件中没有找到需要翻译的字幕内容。")
+            self.logger.info("\nNo subtitle content found in the file that needs translation.")
             return self
         if self.glossary_agent:
             self.glossary_dict_gen = self.glossary_agent.send_segments(original_texts, self.chunk_size)
             if self.translate_agent:
                 self.translate_agent.update_glossary_dict(self.glossary_dict_gen)
-        # --- 步骤 2: 调用翻译Agent ---
+        # --- Step 2: Call translation Agent ---
         if self.translate_agent:
             translated_texts = self.translate_agent.send_segments(original_texts, self.chunk_size)
         else:
             translated_texts = original_texts
-        # --- 步骤 3: 后处理并更新文档内容 ---
+        # --- Step 3: Post-processing and update document content ---
         document.content = self._after_translate(subtitles, translated_texts, original_texts)
         return self
 
     async def translate_async(self, document: Document) -> Self:
         """
-        异步翻译SRT文档。
+        Asynchronously translate SRT document.
         """
-        # I/O密集型操作在线程中运行
+        # Run I/O intensive operations in thread
         subtitles, original_texts = await asyncio.to_thread(self._pre_translate, document)
 
         if not original_texts:
-            self.logger.info("\n文件中没有找到需要翻译的字幕内容。")
+            self.logger.info("\nNo subtitle content found in the file that needs translation.")
             return self
 
         if self.glossary_agent:
@@ -142,12 +142,12 @@ class SrtTranslator(AiTranslator):
             if self.translate_agent:
                 self.translate_agent.update_glossary_dict(self.glossary_dict_gen)
 
-        # --- 步骤 2: 调用翻译Agent (异步) ---
+        # --- Step 2: Call translation Agent (async) ---
         if self.translate_agent:
             translated_texts = await self.translate_agent.send_segments_async(original_texts, self.chunk_size)
         else:
             translated_texts = original_texts
-        # --- 步骤 3: 后处理并更新文档内容 (I/O密集型) ---
+        # --- Step 3: Post-processing and update document content (I/O intensive) ---
         document.content = await asyncio.to_thread(
             self._after_translate, subtitles, translated_texts, original_texts
         )

@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2025 QinHan
+# SPDX-FileCopyrightText: 2025 RealTimeX
 # SPDX-License-Identifier: MPL-2.0
 import asyncio
 from dataclasses import dataclass
@@ -38,29 +38,29 @@ class MDTranslator(AiTranslator):
             self.translate_agent = MDTranslateAgent(agent_config)
 
     def translate(self, document: MarkdownDocument) -> Self:
-        self.logger.info("正在翻译markdown")
+        self.logger.info("Translating markdown")
         with MDMaskUrisContext(document):
             chunks: list[str] = split_markdown_text(document.content.decode(), self.chunk_size)
             if self.glossary_agent:
                 self.glossary_dict_gen = self.glossary_agent.send_segments(chunks, self.chunk_size)
                 if self.translate_agent:
                     self.translate_agent.update_glossary_dict(self.glossary_dict_gen)
-            self.logger.info(f"markdown分为{len(chunks)}块")
+            self.logger.info(f"Markdown split into {len(chunks)} chunks")
             if self.translate_agent:
                 result: list[str] = self.translate_agent.send_chunks(chunks)
             else:
                 result = chunks
             content = join_markdown_texts(result)
-            # 做一些加强鲁棒性的操作
+            # Perform some robustness enhancement operations
             content = content.replace(r'\（', r'\(')
             content = content.replace(r'\）', r'\)')
 
             document.content = content.encode()
-        self.logger.info("翻译完成")
+        self.logger.info("Translation completed")
         return self
 
     async def translate_async(self, document: MarkdownDocument) -> Self:
-        self.logger.info("正在翻译markdown")
+        self.logger.info("Translating markdown")
         with MDMaskUrisContext(document):
             chunks: list[str] = split_markdown_text(document.content.decode(), self.chunk_size)
 
@@ -69,7 +69,7 @@ class MDTranslator(AiTranslator):
                 if self.translate_agent:
                     self.translate_agent.update_glossary_dict(self.glossary_dict_gen)
 
-            self.logger.info(f"markdown分为{len(chunks)}块")
+            self.logger.info(f"Markdown split into {len(chunks)} chunks")
             if self.translate_agent:
                 result: list[str] = await self.translate_agent.send_chunks_async(chunks)
             else:
@@ -77,11 +77,11 @@ class MDTranslator(AiTranslator):
 
             def run():
                 content = join_markdown_texts(result)
-                # 做一些加强鲁棒性的操作
+                # Perform some robustness enhancement operations
                 content = content.replace(r'\（', r'\(')
                 content = content.replace(r'\）', r'\)')
                 document.content = content.encode()
 
             await asyncio.to_thread(run)
-        self.logger.info("翻译完成")
+        self.logger.info("Translation completed")
         return self

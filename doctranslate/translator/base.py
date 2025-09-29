@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2025 QinHan
+# SPDX-FileCopyrightText: 2025 RealTimeX
 # SPDX-License-Identifier: MPL-2.0
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
@@ -19,7 +19,7 @@ T = TypeVar('T', bound=Document)
 
 class Translator(ABC, Generic[T]):
     """
-    翻译中间文本（原地替换），Translator不做格式转换
+    Translate intermediate text (in-place replacement), Translator does not perform format conversion
     """
 
     def __init__(self, config: TranslatorConfig | None = None):
