@@ -544,7 +544,7 @@ class Agent:
 
         headers, data = self._prepare_request_data(prompt, system_prompt)
         should_retry = False
-        is_hard_error = False  # 新增标志，用于区分是否为硬错误
+        is_hard_error = False  # New flag to distinguish hard errors
         current_partial_result = None
         input_tokens = 0
         output_tokens = 0
@@ -560,19 +560,19 @@ class Agent:
 
             result = response.json()["choices"][0]["message"]["content"]
 
-            # 获取token使用情况
+            # Get token usage information
             response_data = response.json()
             input_tokens, cached_tokens, output_tokens, reasoning_tokens = (
                 extract_token_info(response_data)
             )
 
-            # 更新token计数器
+            # Update token counter
             self.token_counter.add(
                 input_tokens, cached_tokens, output_tokens, reasoning_tokens
             )
 
             if retry_count > 0:
-                self.logger.info(f"重试成功 (第 {retry_count}/{self.retry} 次尝试)。")
+                self.logger.info(f"Retry succeeded ({retry_count}/{self.retry} attempts).")
 
             return (
                 result
@@ -580,28 +580,28 @@ class Agent:
                 else result_handler(result, prompt, self.logger)
             )
         except AgentResultError as e:
-            self.logger.error(f"AI返回结果有误: {e}")
+            self.logger.error(f"AI returned invalid result: {e}")
             should_retry = True
-        # 专门捕获部分翻译错误（软错误）
+        # Specifically catch partial translation errors (soft errors)
         except PartialAgentResultError as e:
-            self.logger.error(f"收到部分翻译结果，将尝试重试: {e}")
+            self.logger.error(f"Received partial translation result, will retry: {e}")
             current_partial_result = e.partial_result
             should_retry = True
-            # is_hard_error 保持 False
+            # Keep is_hard_error as False
 
-        # 捕获硬错误
+        # Catch hard errors
         except httpx.HTTPStatusError as e:
             self.logger.error(
-                f"AI请求HTTP状态错误 (sync): {e.response.status_code} - {e.response.text}"
+                f"AI request HTTP status error (sync): {e.response.status_code} - {e.response.text}"
             )
             should_retry = True
             is_hard_error = True
         except httpx.RequestError as e:
-            self.logger.error(f"AI请求连接错误 (sync): {repr(e)}\nprompt:{prompt}")
+            self.logger.error(f"AI request connection error (sync): {repr(e)}\nprompt:{prompt}")
             should_retry = True
             is_hard_error = True
         except (KeyError, IndexError, ValueError) as e:
-            self.logger.error(f"AI响应格式或值错误 (sync), 将尝试重试: {repr(e)}")
+            self.logger.error(f"AI response format or value error (sync), will retry: {repr(e)}")
             should_retry = True
             is_hard_error = True
 
@@ -609,12 +609,12 @@ class Agent:
             best_partial_result = current_partial_result
 
         if should_retry and retry and retry_count < self.retry:
-            # 仅在硬错误时才增加总错误计数
+            # Only increment total error count for hard errors
             if is_hard_error:
                 if retry_count == 0:
                     if self.total_error_counter.add():
-                        self.logger.error("错误次数过多，已达到上限，不再重试。")
-                        # 新增：当因为达到错误上限而不再重试时，增加未解决错误计数
+                        self.logger.error("Too many errors, reached limit, not retrying.")
+                        # New: increment unresolved error count when not retrying due to error limit
                         with self.unresolved_error_lock:
                             self.unresolved_error_count += 1
                         return (
@@ -627,8 +627,8 @@ class Agent:
                             )
                         )
                 elif self.total_error_counter.reach_limit():
-                    self.logger.error("错误次数过多，已达到上限，不再为该请求重试。")
-                    # 新增：当因为达到错误上限而不再重试时，增加未解决错误计数
+                    self.logger.error("Too many errors, reached limit, not retrying for this request.")
+                    # New: increment unresolved error count when not retrying due to error limit
                     with self.unresolved_error_lock:
                         self.unresolved_error_count += 1
                     return (
@@ -641,7 +641,7 @@ class Agent:
                         )
                     )
 
-            self.logger.info(f"正在重试第 {retry_count + 1}/{self.retry} 次...")
+            self.logger.info(f"Retrying {retry_count + 1}/{self.retry} times...")
             time.sleep(0.5)
             return self.send(
                 client,
@@ -656,13 +656,13 @@ class Agent:
             )
         else:
             if should_retry:
-                self.logger.error(f"所有重试均失败，已达到重试次数上限。")
-                # 新增：当所有重试失败后，增加未解决错误计数
+                self.logger.error(f"All retries failed, reached retry limit.")
+                # New: increment unresolved error count when all retries fail
                 with self.unresolved_error_lock:
                     self.unresolved_error_count += 1
 
             if best_partial_result:
-                self.logger.info("所有重试失败，但存在部分翻译结果，将使用该结果。")
+                self.logger.info("All retries failed, but partial translation result exists, will use that result.")
                 return best_partial_result
 
             return (

@@ -3,7 +3,7 @@
 import argparse
 import os
 from pathlib import Path
-import sys  # 用于检查命令行参数数量
+import sys  # Used to check command line argument count
 from typing import Any
 import time
 import json
@@ -403,11 +403,11 @@ def _add_translate_subparser(subparsers: argparse._SubParsersAction) -> None:
     sp.add_argument("--mineru-model-version", choices=["pipeline", "vlm"], default="vlm", help="MinerU model version")
     # mineru_local options
     sp.add_argument("--mineru-local-mode", choices=["cli_dir", "cli_zip"], default="cli_dir",
-                    help="本地MinerU运行模式: 输出目录或输出zip")
-    sp.add_argument("--mineru-local-cmd", default="mineru", help="本地MinerU可执行命令或路径")
+                    help="Local MinerU run mode: output directory or output zip")
+    sp.add_argument("--mineru-local-cmd", default="mineru", help="Local MinerU executable command or path")
     sp.add_argument("--mineru-local-args", default="--input {input} --output {output}",
-                    help="本地MinerU参数模板，使用 {input} 和 {output} 占位符")
-    sp.add_argument("--mineru-local-md-file", default="full.md", help="本地MinerU输出中的Markdown文件名")
+                    help="Local MinerU argument template, use {input} and {output} placeholders")
+    sp.add_argument("--mineru-local-md-file", default="full.md", help="Markdown filename in local MinerU output")
 
     # Glossary options
     sp.add_argument("--glossary-enable", action="store_true", help="Enable glossary generation agent")

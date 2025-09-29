@@ -3,7 +3,7 @@
 from doctranslate.exporter.base import Exporter
 from doctranslate.ir.document import Document
 
-#TODO:看情况是否需要为json单独写一个document类型
+#TODO:Consider whether a separate document type needs to be created for JSON
 class JsonExporter(Exporter[Document]):
 
     def export(self,document:Document)->Document:

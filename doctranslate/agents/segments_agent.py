@@ -119,7 +119,7 @@ class SegmentsTranslateAgent(Agent):
                 # Raise partial result error to trigger retry
                 raise PartialAgentResultError("Key mismatch; trigger retry", partial_result=final_chunk)
 
-            # 如果键完全匹配（理想情况），正常返回
+            # If keys match perfectly (ideal case), return normally
             for key, value in repaired_result.items():
                 repaired_result[key] = str(value)
 
@@ -138,7 +138,7 @@ class SegmentsTranslateAgent(Agent):
             return {}
         try:
             original_chunk = json.loads(origin_prompt)
-            # 此处逻辑保留，作为最终的兜底方案
+            # Keep this logic as the final fallback solution
             for key, value in original_chunk.items():
                 original_chunk[key] = f"{value}"
             return original_chunk
@@ -171,7 +171,7 @@ class SegmentsTranslateAgent(Agent):
             except Exception as e:
                 self.logger.error(f"Unknown error while processing chunk: {e!r}")
 
-        # 重建最终列表
+        # Rebuild final list
         result = []
         last_end = 0
         ls = list(indexed_translated.values())
@@ -201,7 +201,7 @@ class SegmentsTranslateAgent(Agent):
                     continue
                 for key, val in chunk.items():
                     if key in indexed_translated:
-                        # 此处不再需要 str(val)，因为 _result_handler 已经处理好了
+                        # No need for str(val) here since _result_handler already handled it
                         indexed_translated[key] = val
                     else:
                         self.logger.warning(f"Unknown key in results chunk '{key}'; ignored.")
@@ -210,7 +210,7 @@ class SegmentsTranslateAgent(Agent):
             except Exception as e:
                 self.logger.error(f"Unknown error while processing chunk: {e!r}")
 
-        # 重建最终列表
+        # Rebuild final list
         result = []
         last_end = 0
         ls = list(indexed_translated.values())
