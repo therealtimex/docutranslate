@@ -115,22 +115,14 @@ The core of the new doctranslate is the **Workflow**. Each workflow is a complet
 
 | Workflow                    | Use Case                                                        | Input Formats                                | Output Formats             | Core Config Class             |
 |:----------------------------|:----------------------------------------------------------------|:---------------------------------------------|:---------------------------|:------------------------------|
-| **`MarkdownBasedWorkflow`** | Processes rich text documents like PDF, Word, images. Flow: `File -> Markdown -> Translate -> Export`.
-| `.pdf`, `.docx`, `.md`, `.png`, `.jpg`, etc. | `.md`, `.zip`, `.html`     | `MarkdownBasedWorkflowConfig` |
-| **`TXTWorkflow`**           | Processes plain text documents. Flow: `txt -> Translate -> Export`.
-| `.txt` and other plain text formats          | `.txt`, `.html`            | `TXTWorkflowConfig`           |
-| **`JsonWorkflow`**          | Processes JSON files. Flow: `json -> Translate -> Export`.
-          | `.json`                                      | `.json`, `.html`           | `JsonWorkflowConfig`          |
-| **`DocxWorkflow`**          | Processes docx files. Flow: `docx -> Translate -> Export`.
-          | `.docx`                                      | `.docx`, `.html`           | `DocxWorkflowConfig`          |
-| **`XlsxWorkflow`**          | Processes xlsx files. Flow: `xlsx -> Translate -> Export`.
-          | `.xlsx`, `.csv`                              | `.xlsx`, `.html`           | `XlsxWorkflowConfig`          |
-| **`SrtWorkflow`**           | Processes srt files. Flow: `srt -> Translate -> Export`.
-            | `.srt`                                       | `.srt`, `.html`            | `SrtWorkflowConfig`           |
-| **`EpubWorkflow`**          | Processes epub files. Flow: `epub -> Translate -> Export`.
-          | `.epub`                                      | `.epub`, `.html`           | `EpubWorkflowConfig`          |
-| **`HtmlWorkflow`**          | Processes html files. Flow: `html -> Translate -> Export`.
-          | `.html`, `.htm`                              | `.html`                    | `HtmlWorkflowConfig`          |
+| **`MarkdownBasedWorkflow`** | Processes rich text documents like PDF, Word, images. Flow: `File -> Markdown -> Translate -> Export`. | `.pdf`, `.docx`, `.md`, `.png`, `.jpg`, etc. | `.md`, `.zip`, `.html`     | `MarkdownBasedWorkflowConfig` |
+| **`TXTWorkflow`**           | Processes plain text documents. Flow: `txt -> Translate -> Export`. | `.txt` and other plain text formats          | `.txt`, `.html`            | `TXTWorkflowConfig`           |
+| **`JsonWorkflow`**          | Processes JSON files. Flow: `json -> Translate -> Export`.      | `.json`                                      | `.json`, `.html`           | `JsonWorkflowConfig`          |
+| **`DocxWorkflow`**          | Processes docx files. Flow: `docx -> Translate -> Export`.      | `.docx`                                      | `.docx`, `.html`           | `DocxWorkflowConfig`          |
+| **`XlsxWorkflow`**          | Processes xlsx files. Flow: `xlsx -> Translate -> Export`.      | `.xlsx`, `.csv`                              | `.xlsx`, `.html`           | `XlsxWorkflowConfig`          |
+| **`SrtWorkflow`**           | Processes srt files. Flow: `srt -> Translate -> Export`.        | `.srt`                                       | `.srt`, `.html`            | `SrtWorkflowConfig`           |
+| **`EpubWorkflow`**          | Processes epub files. Flow: `epub -> Translate -> Export`.      | `.epub`                                      | `.epub`, `.html`           | `EpubWorkflowConfig`          |
+| **`HtmlWorkflow`**          | Processes html files. Flow: `html -> Translate -> Export`.      | `.html`, `.htm`                              | `.html`                    | `HtmlWorkflowConfig`          |
 
 > You can export to PDF format in the interactive interface.
 
@@ -652,7 +644,3 @@ A: By default, the software does not use the system proxy. You can enable it by 
 ## Sponsorship
 
 Your support is welcome! Please mention the reason for your donation in the memo.
-
-<p align="center">
-  <img src="./images/赞赏码.jpg" alt="Sponsorship QR Code" style="width: 250px;">
-</p>
