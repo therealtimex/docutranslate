@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./doctranslate.png" alt="Project Logo" style="width: 150px">
+  <img src="https://raw.githubusercontent.com/therealtimex/doctranslate/refs/heads/realtimex/doctranslate.png" alt="Project Logo" style="width: 150px">
 </p>
 
 <h1 align="center">doctranslate</h1>
